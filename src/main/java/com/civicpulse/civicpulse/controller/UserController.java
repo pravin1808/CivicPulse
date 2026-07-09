@@ -19,8 +19,12 @@ public class UserController {
     private UserService userService;
 
     @PostMapping("/sign_up")
-    public boolean addUser(@RequestBody UserRequestDto userRequestDto){
-        return userService.addNewUser(userRequestDto);
+    public ResponseEntity<?> addUser(@RequestBody UserRequestDto userRequestDto){
+        if(userService.checkIfUserExist(userRequestDto.email())){
+            return ResponseEntity.status(HttpStatus.MULTI_STATUS).body("User with the provided E-mail ID already exists try to login using using credentials or use the option of forgot password");
+        }
+        userService.addNewUser(userRequestDto);
+        return ResponseEntity.status(HttpStatus.OK).body(userRequestDto.email());
     }
 
     @PostMapping("/verify_otp")

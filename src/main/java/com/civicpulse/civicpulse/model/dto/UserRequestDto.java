@@ -4,6 +4,7 @@ public record UserRequestDto(
         String name,
         String phoneNumber,
         String email,
+        String address,
         String password
 ) {
 }

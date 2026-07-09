@@ -1,37 +1,47 @@
 package com.civicpulse.civicpulse.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class EmailService {
 
-    @Autowired
-    private JavaMailSender mailSender;
+    private final RestClient restClient = RestClient.create();
+
+    @Value("${brevo.api.key}")
+    private String brevoApiKey;
 
     @Async
-    public void sendOtpMail(String toMail, String otp){
-        SimpleMailMessage message = new SimpleMailMessage();
+    public void sendOtpMail(String targetEmail, String otpCode) {
+        String brevoApiUrl = "https://api.brevo.com/v3/smtp/email";
 
-        message.setFrom("noreply@civicpulse.gov.in");
-        message.setTo(toMail);
-        message.setSubject("CivicPulse - Complete Your Registration");
+        System.out.println(targetEmail);
 
-        String emailBody = "Hello,\n\n"
-                + "Thank you for registering on CivicPulse, your city's governance platform.\n"
-                + "Your One-Time Password (OTP) for verification is:\n\n"
-                + "   " + otp + "\n\n"
-                + "This OTP is strictly confidential and will expire automatically in 2 minutes.\n"
-                + "If you did not initiate this registration, please ignore this email.\n\n"
-                + "Regards,\n"
-                + "CivicPulse Administration Team";
+        Map<String, Object> requestBody = Map.of(
+                "sender", Map.of("name", "CivicPulse", "email", "pravinm1808@gmail.com"),
+                "to", List.of(Map.of("email", targetEmail)),
+                "subject", "CivicPulse - Account Verification OTP",
+                "htmlContent", "<h3>Welcome to CivicPulse!</h3>" +
+                        "<p>Your 6-digit verification code is: <b>" + otpCode + "</b></p>" +
+                        "<p>This code expires in 2 minutes.</p>"
+        );
 
-        message.setText(emailBody);
-
-        mailSender.send(message);
+        try {
+            restClient.post()
+                    .uri(brevoApiUrl)
+                    .header("api-key", brevoApiKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(requestBody)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            System.err.println("Failed to send OTP email via Brevo: " + e.getMessage());
+        }
     }
-
 }

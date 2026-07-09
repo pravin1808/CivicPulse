@@ -23,6 +23,12 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(name = "phone_number", nullable = false)
+    private String phoneNumber;
+
+    @Column(nullable = false)
+    private String address;
+
     @Column(nullable = false)
     private String password;
 
@@ -30,11 +36,11 @@ public class User {
     @Column(nullable = false, length = 20)
     private Role role;
 
-    @Column(name = "phone_number", nullable = false)
-    private String phoneNumber;
-
     @Column(length = 6)
     private String otp;
+
+    @Column(name = "otp_expiry_time")
+    private LocalDateTime otpExpTime;
 
     @Column(name = "dept_id")
     private Long dept_id;
