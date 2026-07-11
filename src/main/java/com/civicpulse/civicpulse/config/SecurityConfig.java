@@ -12,10 +12,12 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -24,30 +26,25 @@ public class SecurityConfig {
     @Autowired
     private UserRepo userRepo;
 
+    @Autowired
+    private JwtFilter jwtFilter;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Disable CSRF for REST APIs (temporary for development ease)
                 .csrf(csrf -> csrf.disable())
 
-                // Define URL Authorization Rules
                 .authorizeHttpRequests(auth -> auth
-                        // Publicly accessible routes (Registration & Verification)
-                        .requestMatchers("/api/sign_up", "/api/verify_otp").permitAll()
+                        .requestMatchers("/api/auth/citizen/register", "/api/auth/citizen/verify_otp",
+                                "/api/auth/citizen/login", "/api/auth/admin/login").permitAll()
 
-                        // Role-Based Access Control (RBAC)
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/citizen/**").hasRole("CITIZEN")
                         .requestMatchers("/api/worker/**").hasRole("WORKER")
-
-                        // Any other request must be authenticated
-                        .anyRequest().authenticated()
-                )
-
-                // Enable standard Form Login or HTTP Basic for baseline testing
-                .formLogin(form -> form.defaultSuccessUrl("/", true))
-                .httpBasic(basic -> {
-                });
+                        .anyRequest().authenticated())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -59,9 +56,8 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> {
-            // Your repository call logic goes here
-            User user = userRepo.findByName(username);
+        return email -> {
+            User user = userRepo.findUserByEmail(email);
             if(user == null){
                 throw new UsernameNotFoundException("User 404");
             }

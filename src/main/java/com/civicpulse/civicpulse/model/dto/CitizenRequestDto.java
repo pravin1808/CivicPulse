@@ -1,6 +1,6 @@
 package com.civicpulse.civicpulse.model.dto;
 
-public record UserRequestDto(
+public record CitizenRequestDto(
         String name,
         String phoneNumber,
         String email,
