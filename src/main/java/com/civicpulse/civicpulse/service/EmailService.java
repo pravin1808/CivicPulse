@@ -29,7 +29,7 @@ public class EmailService {
                 "subject", "CivicPulse - Account Verification OTP",
                 "htmlContent", "<h3>Welcome to CivicPulse!</h3>" +
                         "<p>Your 6-digit verification code is: <b>" + otpCode + "</b></p>" +
-                        "<p>This code expires in 2 minutes.</p>"
+                        "<p>This code expires in 5 minutes.</p>"
         );
 
         try {

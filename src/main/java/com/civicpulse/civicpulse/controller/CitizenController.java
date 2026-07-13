@@ -1,15 +1,57 @@
 package com.civicpulse.civicpulse.controller;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.civicpulse.civicpulse.model.User;
+import com.civicpulse.civicpulse.model.dto.IssueDashboardResponseDto;
+import com.civicpulse.civicpulse.model.dto.IssueRequestDto;
+import com.civicpulse.civicpulse.model.dto.IssueResponseDto;
+import com.civicpulse.civicpulse.repository.jpa.UserRepo;
+import com.civicpulse.civicpulse.service.CitizenService;
+import com.civicpulse.civicpulse.service.ImageService;
+import com.civicpulse.civicpulse.service.IssueService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
-@RequestMapping("api/citizen")
+@RequestMapping("api/citizen/issue")
 public class CitizenController {
 
-    @GetMapping("/hello")
-    public String hello(){
-        return "Hello World";
+    @Autowired
+    private IssueService issueService;
+
+    @Autowired
+    private ImageService imageService;
+
+    @Autowired
+    private CitizenService citizenService;
+
+    @Autowired
+    private UserRepo userRepo;
+
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> reportNewIssue(
+            @Valid @RequestPart("issue") IssueRequestDto issueRequestDto,
+            @Valid @RequestParam(value = "image", required = false) MultipartFile imageFile,
+            Authentication authentication) throws Exception {
+
+        String email = authentication.getName();
+        User currentUser = userRepo.findUserByEmail(email);
+        String imageUrl = imageService.saveImage(imageFile);
+        return new ResponseEntity<>(issueService.createIssue(issueRequestDto, imageUrl, currentUser), HttpStatus.CREATED);
     }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<IssueDashboardResponseDto>> getAll(Authentication authentication){
+        return new ResponseEntity<>(citizenService.getAllIssues(authentication.getName()), HttpStatus.FOUND);
+    }
+
+
+
 }

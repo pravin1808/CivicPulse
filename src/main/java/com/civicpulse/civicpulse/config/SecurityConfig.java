@@ -36,7 +36,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/citizen/register", "/api/auth/citizen/verify_otp",
-                                "/api/auth/citizen/login", "/api/auth/admin/login").permitAll()
+                                "/api/auth/citizen/login", "/api/auth/admin/login", "/api/auth/worker/login").permitAll()
 
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/citizen/**").hasRole("CITIZEN")

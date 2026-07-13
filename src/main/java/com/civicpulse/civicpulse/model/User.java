@@ -1,13 +1,12 @@
 package com.civicpulse.civicpulse.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity(name="users")
@@ -49,7 +48,7 @@ public class User {
     private LocalDateTime otpExpTime;
 
     @Column(name = "dept_id")
-    private Long dept_id;
+    private Long departmentId;
 
     private boolean enabled = false;
 

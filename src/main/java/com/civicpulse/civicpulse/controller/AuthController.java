@@ -2,11 +2,12 @@ package com.civicpulse.civicpulse.controller;
 
 import com.civicpulse.civicpulse.model.Role;
 import com.civicpulse.civicpulse.model.dto.AuthResponseDto;
-import com.civicpulse.civicpulse.model.dto.CitizenRequestDto;
+import com.civicpulse.civicpulse.model.dto.CitizenRegisterRequestDto;
 import com.civicpulse.civicpulse.model.dto.LoginRequestDto;
 import com.civicpulse.civicpulse.model.dto.OtpRequestDto;
 import com.civicpulse.civicpulse.service.JwtService;
-import com.civicpulse.civicpulse.service.UserService;
+import com.civicpulse.civicpulse.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +24,7 @@ import java.util.regex.Pattern;
 public class AuthController {
 
     @Autowired
-    private UserService userService;
+    private AuthService authService;
     @Autowired
     private AuthenticationManager authenticationManager;
     @Autowired
@@ -33,24 +34,24 @@ public class AuthController {
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
     @PostMapping("citizen/register")
-    public ResponseEntity<?> registerNewCitizen(@RequestBody CitizenRequestDto citizenRequestDto){
-        if(!PasswordValidator.isValid(citizenRequestDto.password())){
+    public ResponseEntity<?> registerNewCitizen(@Valid @RequestBody CitizenRegisterRequestDto citizenRegisterRequestDto){
+        if(!PasswordValidator.isValid(citizenRegisterRequestDto.password())){
             return ResponseEntity.badRequest().body(
                     "Password must be 8-20 characters long and include " +
                             "at least one uppercase letter, one lowercase letter, " +
                             "one digit, and one special character (@#$%^&+=!)."
             );
         }
-        if(userService.checkIfUserExist(citizenRequestDto.email())){
-            return ResponseEntity.status(HttpStatus.MULTI_STATUS).body("User with the provided E-mail ID already exists try to login using using credentials or use the option of forgot password");
+        if(authService.checkIfUserExist(citizenRegisterRequestDto.email())){
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("User with the provided E-mail ID already exists try to login using using credentials or use the option of forgot password");
         }
-        userService.addNewUser(citizenRequestDto);
-        return ResponseEntity.status(HttpStatus.OK).body(citizenRequestDto.email());
+        authService.addNewUser(citizenRegisterRequestDto);
+        return ResponseEntity.status(HttpStatus.OK).body(citizenRegisterRequestDto.email());
     }
 
     @PostMapping("citizen/verify_otp")
-    public ResponseEntity<?> verifyCitizenOtpAndRegister(@RequestBody OtpRequestDto otpRequestDto){
-        String result = userService.verifyAndRegisterUser(otpRequestDto.email(), otpRequestDto.otp());
+    public ResponseEntity<?> verifyCitizenOtpAndRegister(@Valid @RequestBody OtpRequestDto otpRequestDto){
+        String result = authService.verifyAndRegisterUser(otpRequestDto.email(), otpRequestDto.otp());
 
         return switch (result) {
             case "SUCCESS" -> ResponseEntity.ok("Account successfully verified and activated!");
@@ -64,7 +65,7 @@ public class AuthController {
     }
 
     @PostMapping("citizen/login")
-    public ResponseEntity<?> citizenLogin(@RequestBody LoginRequestDto loginRequestDto){
+    public ResponseEntity<?> citizenLogin(@Valid @RequestBody LoginRequestDto loginRequestDto){
         try{
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -75,7 +76,7 @@ public class AuthController {
 
             if(authentication.isAuthenticated()){
 
-                Role role = userService.whatRole(loginRequestDto.email());
+                Role role = authService.whatRole(loginRequestDto.email());
 
                 if(!(role==Role.CITIZEN)){
                     return ResponseEntity.status(401).body("Your Role is not Citizen");
@@ -91,7 +92,7 @@ public class AuthController {
     }
 
     @PostMapping("admin/login")
-    public ResponseEntity<?> adminLogin(@RequestBody LoginRequestDto loginRequestDto){
+    public ResponseEntity<?> adminLogin(@Valid @RequestBody LoginRequestDto loginRequestDto){
         try{
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -101,7 +102,7 @@ public class AuthController {
             );
 
             if(authentication.isAuthenticated()){
-                Role role = userService.whatRole(loginRequestDto.email());
+                Role role = authService.whatRole(loginRequestDto.email());
                 if(!(role == Role.ADMIN)){
                     return ResponseEntity.status(401).body("You are not an admin");
                 }
@@ -117,7 +118,7 @@ public class AuthController {
 
 
     @PostMapping("worker/login")
-    public ResponseEntity<?> workerLogin(@RequestBody LoginRequestDto loginRequestDto){
+    public ResponseEntity<?> workerLogin(@Valid @RequestBody LoginRequestDto loginRequestDto){
         try{
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -128,7 +129,7 @@ public class AuthController {
 
             if(authentication.isAuthenticated()){
 
-                Role role  = userService.whatRole(loginRequestDto.email());
+                Role role  = authService.whatRole(loginRequestDto.email());
                 if(!(role == Role.WORKER)){
                     return ResponseEntity.status(401).body("You are not an worker");
                 }
@@ -144,7 +145,7 @@ public class AuthController {
     }
 
 
-    private static class PasswordValidator {
+    static class PasswordValidator {
         private static final String PASSWORD_PATTERN =
                 "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).{8,20}$";
 
