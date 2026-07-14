@@ -4,6 +4,7 @@ import com.civicpulse.civicpulse.model.Role;
 import com.civicpulse.civicpulse.model.User;
 import com.civicpulse.civicpulse.model.cache.TemporaryUser;
 import com.civicpulse.civicpulse.model.dto.CitizenRegisterRequestDto;
+import com.civicpulse.civicpulse.model.dto.OtpRequestDto;
 import com.civicpulse.civicpulse.repository.redis.TemporaryUserRepo;
 import com.civicpulse.civicpulse.repository.jpa.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,17 +12,20 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.Random;
 
 @Service
 public class AuthService {
 
     @Autowired
-    private TemporaryUserRepo tempUserRepo;
+    private EmailService emailService;
 
     @Autowired
-    private EmailService emailService;
+    private JwtService jwtService;
+
+    @Autowired
+    private TemporaryUserRepo tempUserRepo;
 
     @Autowired
     private UserRepo userRepo;
@@ -68,5 +72,34 @@ public class AuthService {
     public Role whatRole(String email) {
         User user = userRepo.findUserByEmail(email);
         return user.getRole();
+    }
+
+    public void forgotPasswordOtpRequest(String email) {
+        SecureRandom random = new SecureRandom();
+        String otp = String.valueOf(100000 + random.nextInt(900000));
+        emailService.sendOtpMail(email, otp);
+        User user = userRepo.findUserByEmail(email);
+        user.setOtp(otp);
+        user.setOtpExpTime(LocalDateTime.now().plusMinutes(5));
+    }
+
+    public String verifyOtpAndLogin(OtpRequestDto otpRequestDto) {
+        User user = userRepo.findUserByEmail(otpRequestDto.email());
+        if(user.getOtp()==null || user.getOtpExpTime()==null){
+            throw new RuntimeException("OTP is not requested");
+        }
+        boolean isBefore = LocalDateTime.now().isBefore(user.getOtpExpTime());
+        if (!isBefore) {
+            throw new IllegalStateException("OTP has expired.");
+        }
+
+        if (!user.getOtp().equals(otpRequestDto.otp())) {
+            throw new IllegalArgumentException("Invalid OTP.");
+        }
+        user.setOtp(null);
+        user.setOtpExpTime(null);
+        userRepo.save(user);
+
+        return jwtService.generateToken(user.getEmail(), "ROLE_" + user.getRole().name());
     }
 }

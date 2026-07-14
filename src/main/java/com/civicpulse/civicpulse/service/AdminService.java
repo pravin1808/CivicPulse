@@ -96,10 +96,7 @@ public class AdminService {
     }
 
     @Transactional
-    public IssueDashboardResponseDto updateIssue(
-            String issueId,
-            AdminUpdateIssueRequestDto request
-    ) {
+    public IssueDashboardResponseDto updateIssue(String issueId, AdminUpdateIssueRequestDto request) {
         Issue issue = Optional.ofNullable(issueRepo.findByIssueId(issueId))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 

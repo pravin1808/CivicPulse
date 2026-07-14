@@ -35,8 +35,13 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/citizen/register", "/api/auth/citizen/verify_otp",
-                                "/api/auth/citizen/login", "/api/auth/admin/login", "/api/auth/worker/login").permitAll()
+                        .requestMatchers("/api/auth/citizen/register",
+                                "/api/auth/citizen/verify_otp",
+                                "/api/auth/citizen/login",
+                                "/api/auth/admin/login",
+                                "/api/auth/worker/login",
+                                "/api/auth/forgot_password",
+                                "/api/auth/verify_otp/login").permitAll()
 
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/citizen/**").hasRole("CITIZEN")

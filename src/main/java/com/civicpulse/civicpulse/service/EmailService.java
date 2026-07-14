@@ -17,11 +17,10 @@ public class EmailService {
     @Value("${brevo.api.key}")
     private String brevoApiKey;
 
+    private String brevoApiUrl = "https://api.brevo.com/v3/smtp/email";
+
     @Async
     public void sendOtpMail(String targetEmail, String otpCode) {
-        String brevoApiUrl = "https://api.brevo.com/v3/smtp/email";
-
-        System.out.println(targetEmail);
 
         Map<String, Object> requestBody = Map.of(
                 "sender", Map.of("name", "CivicPulse", "email", "pravinm1808@gmail.com"),

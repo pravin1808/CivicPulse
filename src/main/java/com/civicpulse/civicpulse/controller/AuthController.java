@@ -1,10 +1,8 @@
 package com.civicpulse.civicpulse.controller;
 
 import com.civicpulse.civicpulse.model.Role;
-import com.civicpulse.civicpulse.model.dto.AuthResponseDto;
-import com.civicpulse.civicpulse.model.dto.CitizenRegisterRequestDto;
-import com.civicpulse.civicpulse.model.dto.LoginRequestDto;
-import com.civicpulse.civicpulse.model.dto.OtpRequestDto;
+import com.civicpulse.civicpulse.model.dto.*;
+import com.civicpulse.civicpulse.service.EmailService;
 import com.civicpulse.civicpulse.service.JwtService;
 import com.civicpulse.civicpulse.service.AuthService;
 import jakarta.validation.Valid;
@@ -30,11 +28,8 @@ public class AuthController {
     @Autowired
     private JwtService jwtService;
 
-    @Autowired
-    private BCryptPasswordEncoder bCryptPasswordEncoder;
-
     @PostMapping("citizen/register")
-    public ResponseEntity<?> registerNewCitizen(@Valid @RequestBody CitizenRegisterRequestDto citizenRegisterRequestDto){
+    public ResponseEntity<?> registerNewCitizen(@RequestBody CitizenRegisterRequestDto citizenRegisterRequestDto){
         if(!PasswordValidator.isValid(citizenRegisterRequestDto.password())){
             return ResponseEntity.badRequest().body(
                     "Password must be 8-20 characters long and include " +
@@ -142,6 +137,21 @@ public class AuthController {
         }catch (Exception e){
             return ResponseEntity.status(401).body("Invalid User Name or Password");
         }
+    }
+
+    @PostMapping("/forgot_password")
+    public ResponseEntity<?> forgotPasswordGenerateOtp(EmailDto emailDto){
+        if(authService.checkIfUserExist(emailDto.email())){
+            authService.forgotPasswordOtpRequest(emailDto.email());
+            return new ResponseEntity<>(emailDto, HttpStatus.ACCEPTED);
+         }
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    }
+
+    @PostMapping("verify_otp/login")
+    public ResponseEntity<?> verifyOtpAndLogin(OtpRequestDto otpRequestDto){
+        String token = authService.verifyOtpAndLogin(otpRequestDto);
+        return ResponseEntity.ok(new AuthResponseDto(token));
     }
 
 
