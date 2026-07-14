@@ -1,9 +1,6 @@
 package com.civicpulse.civicpulse.controller;
 
-import com.civicpulse.civicpulse.model.dto.AdminUpdateIssueRequestDto;
-import com.civicpulse.civicpulse.model.dto.IssueDashboardResponseDto;
-import com.civicpulse.civicpulse.model.dto.WorkerRegisterRequestDto;
-import com.civicpulse.civicpulse.model.dto.WorkerResponseDto;
+import com.civicpulse.civicpulse.model.dto.*;
 import com.civicpulse.civicpulse.service.AdminService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,14 +35,35 @@ public class AdminController {
         return ResponseEntity.status(HttpStatus.OK).body(workerRegisterRequestDto.email());
     }
 
-    @GetMapping("/issues/all")
+    @GetMapping("/workers")
+    public ResponseEntity<List<WorkerResponseDto>> getAllWorkersByDept(){
+        return new ResponseEntity<>(adminService.getAllWorkersByDept(), HttpStatus.FOUND);
+    }
+
+    @GetMapping("/worker/{worker_id}")
+    public ResponseEntity<WorkerResponseDto> getWorkerById(@PathVariable Long worker_id){
+        return new ResponseEntity<>(adminService.getWorkerById(worker_id), HttpStatus.FOUND);
+    }
+
+    @PutMapping("/worker/{worker_id}")
+    public ResponseEntity<WorkerResponseDto> updateWorkerById(@RequestBody WorkerRequestDto workerRequestDto, @PathVariable Long worker_id){
+        return new ResponseEntity<>(adminService.updateWorkerById(workerRequestDto, worker_id), HttpStatus.OK);
+    }
+
+    @DeleteMapping("/worker/{worker_id}")
+    public ResponseEntity<?> deleteWorkerById(@PathVariable Long worker_id){
+        adminService.deleteWorkerById(worker_id);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @GetMapping("/issues")
     public ResponseEntity<List<IssueDashboardResponseDto>> getAll(){
         return new ResponseEntity<>(adminService.getAllIssues(), HttpStatus.FOUND);
     }
 
-    @GetMapping("/workers")
-    public ResponseEntity<List<WorkerResponseDto>> getAllWorkersByDept(){
-        return new ResponseEntity<>(adminService.getAllWorkersByDept(), HttpStatus.FOUND);
+    @GetMapping("/issue/{issue_id}")
+    private ResponseEntity<SingleIssueResponseDto> getIssueById(@PathVariable String issue_id){
+        return new ResponseEntity<>(adminService.getIssueById(issue_id), HttpStatus.FOUND);
     }
 
     @PatchMapping("/issue/assign/{issue_id}")
@@ -53,6 +71,6 @@ public class AdminController {
         return new ResponseEntity<>(adminService.updateIssue(issue_id, adminUpdateIssueRequestDto), HttpStatus.OK);
     }
 
-
+    
 
 }

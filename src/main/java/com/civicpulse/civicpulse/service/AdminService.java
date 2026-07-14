@@ -3,10 +3,7 @@ package com.civicpulse.civicpulse.service;
 import com.civicpulse.civicpulse.model.Issue;
 import com.civicpulse.civicpulse.model.Role;
 import com.civicpulse.civicpulse.model.User;
-import com.civicpulse.civicpulse.model.dto.AdminUpdateIssueRequestDto;
-import com.civicpulse.civicpulse.model.dto.IssueDashboardResponseDto;
-import com.civicpulse.civicpulse.model.dto.WorkerRegisterRequestDto;
-import com.civicpulse.civicpulse.model.dto.WorkerResponseDto;
+import com.civicpulse.civicpulse.model.dto.*;
 import com.civicpulse.civicpulse.repository.jpa.IssueRepo;
 import com.civicpulse.civicpulse.repository.jpa.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -134,5 +131,63 @@ public class AdminService {
                 updatedIssue.getCategory().getId(),
                 updatedIssue.getCitizen()
         );
+    }
+
+    public WorkerResponseDto getWorkerById(Long workerId) {
+        User worker = userRepo.findById(workerId).orElseThrow(() -> new RuntimeException("Worker not found"));
+
+        return new WorkerResponseDto(
+                worker.getId(),
+                worker.getName(),
+                worker.getEmail(),
+                worker.getPhoneNumber(),
+                worker.getAddress(),
+                worker.getDepartmentId()
+        );
+
+    }
+
+    public WorkerResponseDto updateWorkerById(WorkerRequestDto workerRequestDto, Long workerId) {
+        User worker = userRepo.findById(workerId).orElseThrow(() -> new RuntimeException("Worker not found"));
+
+        worker.setName(workerRequestDto.name());
+        worker.setPhoneNumber(workerRequestDto.phoneNumber());
+        worker.setAddress(workerRequestDto.address());
+        worker.setDepartmentId(workerRequestDto.dept_id());
+
+        User updated = userRepo.save(worker);
+
+        return new WorkerResponseDto(
+                updated.getId(),
+                updated.getName(),
+                updated.getEmail(),
+                updated.getPhoneNumber(),
+                updated.getAddress(),
+                updated.getDepartmentId()
+        );
+    }
+
+    public void deleteWorkerById(Long workerId) {
+        userRepo.delete(userRepo.findById(workerId).orElseThrow(() -> new RuntimeException("Worker not found")));
+    }
+
+    public SingleIssueResponseDto getIssueById(String issueId) {
+        try{
+            Issue issue = issueRepo.findByIssueId(issueId);
+
+            return new SingleIssueResponseDto(
+                    issue.getIssueId(),
+                    issue.getTitle(),
+                    issue.getDescription(),
+                    issue.getStatus(),
+                    issue.getCreatedAt(),
+                    issue.getUpdatedAt(),
+                    issue.getImageUrl(),
+                    issue.getAfterImageURl()
+            );
+
+        }catch (Exception e){
+            throw new RuntimeException("Issue not found");
+        }
     }
 }

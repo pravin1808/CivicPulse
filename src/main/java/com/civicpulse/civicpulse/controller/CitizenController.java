@@ -4,6 +4,7 @@ import com.civicpulse.civicpulse.model.User;
 import com.civicpulse.civicpulse.model.dto.IssueDashboardResponseDto;
 import com.civicpulse.civicpulse.model.dto.IssueRequestDto;
 import com.civicpulse.civicpulse.model.dto.IssueResponseDto;
+import com.civicpulse.civicpulse.model.dto.SingleIssueResponseDto;
 import com.civicpulse.civicpulse.repository.jpa.UserRepo;
 import com.civicpulse.civicpulse.service.CitizenService;
 import com.civicpulse.civicpulse.service.ImageService;
@@ -20,7 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/citizen/issue")
+@RequestMapping("api/citizen")
 public class CitizenController {
 
     @Autowired
@@ -35,7 +36,7 @@ public class CitizenController {
     @Autowired
     private UserRepo userRepo;
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/issue", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> reportNewIssue(
             @Valid @RequestPart("issue") IssueRequestDto issueRequestDto,
             @Valid @RequestParam(value = "image", required = false) MultipartFile imageFile,
@@ -43,15 +44,31 @@ public class CitizenController {
 
         String email = authentication.getName();
         User currentUser = userRepo.findUserByEmail(email);
-        String imageUrl = imageService.saveImage(imageFile);
+        String imageUrl = imageService.saveImage(imageFile, "Before ");
         return new ResponseEntity<>(issueService.createIssue(issueRequestDto, imageUrl, currentUser), HttpStatus.CREATED);
     }
 
-    @GetMapping("/all")
+    @GetMapping("issues")
     public ResponseEntity<List<IssueDashboardResponseDto>> getAll(Authentication authentication){
         return new ResponseEntity<>(citizenService.getAllIssues(authentication.getName()), HttpStatus.FOUND);
     }
 
+    @GetMapping("/issue/{issue_id}")
+    public ResponseEntity<SingleIssueResponseDto> getIssueById(@PathVariable String issue_id, Authentication authentication){
+        return new ResponseEntity<>(citizenService.getIssueById(authentication, issue_id), HttpStatus.FOUND);
+    }
 
+    @PutMapping("/issue")
+    public ResponseEntity<IssueResponseDto> updateIssueById(@RequestPart("issue") IssueRequestDto issueRequestDto,
+                                                            Authentication authentication,
+                                                            @RequestParam(value = "image", required = false) MultipartFile imageFile){
+        return new ResponseEntity<>(citizenService.updateIssueById(issueRequestDto, authentication, imageFile), HttpStatus.FOUND);
+    }
+
+    @DeleteMapping("/issue/{issue_id}")
+    public ResponseEntity<?> deleteIssueById(Authentication authentication, @PathVariable String issue_id){
+        citizenService.deleteIssueById(authentication,issue_id);
+        return new ResponseEntity<>("Issue Deleted Successfully", HttpStatus.OK);
+    }
 
 }

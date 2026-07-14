@@ -6,6 +6,8 @@ import com.civicpulse.civicpulse.repository.jpa.DepartmentRepo;
 import com.civicpulse.civicpulse.repository.jpa.CategoryRepo;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +23,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     @Override
+    @Transactional
     public void run(String... args) throws Exception {
         // Prevent duplicate insertions on app restarts
         if (departmentRepo.count() == 0) {

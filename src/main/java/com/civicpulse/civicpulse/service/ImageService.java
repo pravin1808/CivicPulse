@@ -14,7 +14,7 @@ public class ImageService {
 
     private final String UPLOAD_DIR = "D:\\Images\\";
 
-    public String saveImage(MultipartFile imageFile) throws Exception {
+    public String saveImage(MultipartFile imageFile, String afterOrBefore) throws Exception {
         if (imageFile.isEmpty()) {
             return null;
         }
@@ -25,7 +25,7 @@ public class ImageService {
         String originalFilename = imageFile.getOriginalFilename();
         assert originalFilename != null;
         String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
+        String uniqueFileName = afterOrBefore+UUID.randomUUID().toString() + fileExtension;
 
         Path path = Paths.get(UPLOAD_DIR + uniqueFileName);
         Files.write(path, imageFile.getBytes());

@@ -2,7 +2,6 @@ package com.civicpulse.civicpulse.controller;
 
 import com.civicpulse.civicpulse.model.Role;
 import com.civicpulse.civicpulse.model.dto.*;
-import com.civicpulse.civicpulse.service.EmailService;
 import com.civicpulse.civicpulse.service.JwtService;
 import com.civicpulse.civicpulse.service.AuthService;
 import jakarta.validation.Valid;
@@ -12,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.regex.Pattern;
@@ -131,7 +129,6 @@ public class AuthController {
                 String token = jwtService.generateToken(loginRequestDto.email(), "ROLE_" + role.name());
                 return ResponseEntity.ok(new AuthResponseDto(token));
             }else{
-                System.out.println(5);
                 return ResponseEntity.status(401).body("Authentication Failed");
             }
         }catch (Exception e){

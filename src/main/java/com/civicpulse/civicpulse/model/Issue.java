@@ -33,6 +33,9 @@ public class Issue {
 
     private String imageUrl;
 
+    @Column(name = "after")
+    private String afterImageURl;
+
     @Column(nullable = false)
     private Double latitude;
 
