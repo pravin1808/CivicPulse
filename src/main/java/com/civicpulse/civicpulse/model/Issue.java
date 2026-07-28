@@ -60,15 +60,7 @@ public class Issue {
     @JoinColumn(name = "worker_id")
     private User worker;
 
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-    }
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
 
 }
 

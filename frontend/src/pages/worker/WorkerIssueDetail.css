@@ -1,0 +1,49 @@
+.warning-callout-card {
+  display: flex;
+  gap: 16px;
+  background-color: #fffbeb;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 32px;
+  align-items: flex-start;
+}
+
+.warning-callout-card .info-icon {
+  color: #d97706;
+}
+
+.callout-content h4 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 4px;
+}
+
+.callout-content p {
+  font-size: 0.82rem;
+  color: #b45309;
+  line-height: 1.4;
+}
+
+.update-status-card {
+  padding: 32px;
+}
+
+.update-status-card h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.status-update-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.submit-status-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+}

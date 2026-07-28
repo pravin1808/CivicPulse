@@ -54,10 +54,15 @@ public class WorkerService {
     public IssueWorkerResponseDto getIssueOfWorkerById(Authentication authentication, String issueId) {
         try {
             Issue issue = issueRepo.findByIssueId(issueId);
+            System.out.println(issue.getIssueId());
             User worker = userRepo.findUserByEmail(authentication.getName());
+            System.out.println(2);
             if (!Objects.equals(issue.getCitizen().getId(), worker.getId())) {
+                System.out.println(3);
                 throw new RuntimeException("You are allowed to see this Issue");
             }
+            System.out.println(4);
+
 
             return new IssueWorkerResponseDto(
                     issue.getIssueId(),
@@ -87,10 +92,11 @@ public class WorkerService {
                 throw new RuntimeException("Provide the status to modify the issue");
             }
             if ((issueUpdateDto.status() == IssueStatus.RESOLVED)) {
-                if(imageFile.isEmpty()){
+                if(imageFile != null && imageFile.isEmpty()){
                     throw new RuntimeException("After Image is required to show the status of issue as resolved");
                 }else{
-                    String imageUrl = imageService.saveImage(imageFile, "After");
+                    assert imageFile != null;
+                    String imageUrl = imageService.saveImage(issue.getCategory().getId(), issue.getIssueId(), imageFile, "After");
                     issue.setAfterImageURl(imageUrl);
                 }
             }

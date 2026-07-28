@@ -63,7 +63,12 @@ public class AdminService {
                     issue.getUpdatedAt(),
                     issue.getCategory().getDepartment().getId(),
                     issue.getCategory().getId(),
-                    issue.getCitizen()
+                    new IssuesCitizenDto(
+                            issue.getCitizen().getId(),
+                            issue.getCitizen().getName(),
+                            issue.getCitizen().getEmail(),
+                            issue.getCitizen().getPhoneNumber()
+                    )
             );
             issueDashboardResponseDtos.add(issueDashboardResponseDto);
         }
@@ -112,9 +117,11 @@ public class AdminService {
             issue.setWorker(worker);
         }
 
-        if (request.status() != null) {
+        if (request.status() != issue.getStatus()) {
             issue.setStatus(request.status());
         }
+
+        issue.setUpdatedAt(LocalDateTime.now());
 
         Issue updatedIssue = issueRepo.save(issue);
 
@@ -129,7 +136,12 @@ public class AdminService {
                 updatedIssue.getUpdatedAt(),
                 updatedIssue.getCategory().getDepartment().getId(),
                 updatedIssue.getCategory().getId(),
-                updatedIssue.getCitizen()
+                new IssuesCitizenDto(
+                        issue.getCitizen().getId(),
+                        issue.getCitizen().getName(),
+                        issue.getCitizen().getEmail(),
+                        issue.getCitizen().getPhoneNumber()
+                )
         );
     }
 

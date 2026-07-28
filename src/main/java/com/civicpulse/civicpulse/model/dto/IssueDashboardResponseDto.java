@@ -16,6 +16,6 @@ public record IssueDashboardResponseDto(
         LocalDateTime updatedAt,
         Long department,
         Long category,
-        User citizen
+        IssuesCitizenDto citizen
 ) {
 }

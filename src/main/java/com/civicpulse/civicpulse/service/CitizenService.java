@@ -3,10 +3,7 @@ package com.civicpulse.civicpulse.service;
 import com.civicpulse.civicpulse.model.Category;
 import com.civicpulse.civicpulse.model.Issue;
 import com.civicpulse.civicpulse.model.User;
-import com.civicpulse.civicpulse.model.dto.IssueDashboardResponseDto;
-import com.civicpulse.civicpulse.model.dto.IssueRequestDto;
-import com.civicpulse.civicpulse.model.dto.IssueResponseDto;
-import com.civicpulse.civicpulse.model.dto.SingleIssueResponseDto;
+import com.civicpulse.civicpulse.model.dto.*;
 import com.civicpulse.civicpulse.repository.jpa.CategoryRepo;
 import com.civicpulse.civicpulse.repository.jpa.IssueRepo;
 import com.civicpulse.civicpulse.repository.jpa.UserRepo;
@@ -15,7 +12,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -51,7 +47,12 @@ public class CitizenService {
                     issue.getUpdatedAt(),
                     issue.getCategory().getDepartment().getId(),
                     issue.getCategory().getId(),
-                    issue.getCitizen()
+                    new IssuesCitizenDto(
+                            issue.getCitizen().getId(),
+                            issue.getCitizen().getName(),
+                            issue.getCitizen().getEmail(),
+                            issue.getCitizen().getPhoneNumber()
+                    )
             );
             issueDashboardResponseDtos.add(issueDashboardResponseDto);
         }
@@ -86,7 +87,7 @@ public class CitizenService {
         User citizen = userRepo.findUserByEmail(authentication.getName());
 
         if(!citizen.getId().equals(issue.getCitizen().getId())){
-            throw new RuntimeException("Yo are not eligible to edit the issue");
+            throw new RuntimeException("You are not eligible to edit the issue");
         }
 
         issue.setTitle(issueRequestDto.title());
@@ -96,10 +97,10 @@ public class CitizenService {
         Category category = categoryRepo.findById(issueRequestDto.categoryId()).orElseThrow(() -> new RuntimeException("Category Not Found"));
         issue.setCategory(category);
 
-        if(!imageFile.isEmpty()){
+        if(imageFile!=null && !imageFile.isEmpty()){
             try{
                 Files.deleteIfExists(Path.of(issue.getImageUrl()));
-                String imageUrl = imageService.saveImage(imageFile, "Before");
+                String imageUrl = imageService.saveImage(issue.getCategory().getId(), issue.getIssueId(), imageFile, "Before");
                 issue.setImageUrl(imageUrl);
             }catch (Exception e){
                 throw new RuntimeException("Some error occurred during deleting the image");

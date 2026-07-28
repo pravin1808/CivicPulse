@@ -1,0 +1,237 @@
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-primary);
+  position: relative;
+  padding: 40px 20px;
+}
+
+.back-btn {
+  position: absolute;
+  top: 30px;
+  left: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.back-btn:hover {
+  color: var(--accent);
+}
+
+.login-card-wrapper {
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-logo-section {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.login-logo-section .login-logo {
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 14px rgba(194, 109, 36, 0.4);
+}
+
+.login-logo-section h2 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.login-logo-section p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.login-card {
+  width: 100%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+/* Tabs */
+.role-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background-color: #f1f5f9;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.role-tab {
+  padding: 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.role-tab:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+  color: var(--accent);
+}
+
+.role-tab.active {
+  background-color: var(--bg-secondary);
+  color: var(--accent);
+}
+
+/* Form Styles */
+.login-form {
+  padding: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group-title h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.form-group-title p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.error-alert {
+  background-color: var(--bg-rejected);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--color-rejected);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.forgot-link {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+.input-field-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.input-field-wrapper input,
+.input-field-wrapper select,
+.input-field-wrapper textarea {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  font-size: 0.95rem;
+  transition: all var(--transition-fast);
+  color: var(--text-primary);
+  background-color: #f8fafc;
+}
+
+.input-field-wrapper input:focus,
+.input-field-wrapper select:focus,
+.input-field-wrapper textarea:focus {
+  border-color: var(--accent);
+  background-color: var(--bg-secondary);
+  box-shadow: 0 0 0 3px rgba(194, 109, 36, 0.15);
+}
+
+.login-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  margin-top: 10px;
+}
+
+.register-redirect {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  margin-top: 10px;
+}
+
+.register-redirect span {
+  color: var(--text-secondary);
+}
+
+.register-redirect a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.register-redirect a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 500px) {
+  .back-btn {
+    position: static;
+    margin-bottom: 20px;
+    align-self: flex-start;
+  }
+}

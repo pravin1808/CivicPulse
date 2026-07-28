@@ -3,13 +3,17 @@ package com.civicpulse.civicpulse.service;
 import com.civicpulse.civicpulse.model.Category;
 import com.civicpulse.civicpulse.model.Issue;
 import com.civicpulse.civicpulse.model.User;
-import com.civicpulse.civicpulse.model.dto.IssueRequestDto;
+import com.civicpulse.civicpulse.model.dto.IssueRegisterDto;
 import com.civicpulse.civicpulse.model.dto.IssueResponseDto;
 import com.civicpulse.civicpulse.repository.jpa.CategoryRepo;
 import com.civicpulse.civicpulse.repository.jpa.IssueRepo;
+import com.civicpulse.civicpulse.repository.jpa.UserRepo;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 
@@ -17,27 +21,38 @@ import java.time.LocalDateTime;
 public class IssueService {
 
     @Autowired
+    private ImageService imageService;
+
+    @Autowired
     private IssueRepo issueRepo;
 
     @Autowired
     private CategoryRepo categoryRepo;
 
+    @Autowired
+    private UserRepo userRepo;
+
     @Transactional
-    public IssueResponseDto createIssue(IssueRequestDto issueRequestDto, String imageUrl, User citizen){
+    public IssueResponseDto createIssue(@Valid IssueRegisterDto issueRegisterDto, MultipartFile imageFile, Authentication authentication) throws Exception {
+        String email = authentication.getName();
+        User citizen = userRepo.findUserByEmail(email);
+
+
         Issue newIssue = new Issue();
-        newIssue.setTitle(issueRequestDto.title());
-        newIssue.setDescription(issueRequestDto.description());
-        newIssue.setImageUrl(imageUrl);
-        newIssue.setLatitude(issueRequestDto.latitude());
-        newIssue.setLongitude(issueRequestDto.longitude());
+        newIssue.setTitle(issueRegisterDto.title());
+        newIssue.setDescription(issueRegisterDto.description());
+        newIssue.setLatitude(issueRegisterDto.latitude());
+        newIssue.setLongitude(issueRegisterDto.longitude());
         newIssue.setCreatedAt(LocalDateTime.now());
 
-        Category category = categoryRepo.findById(issueRequestDto.categoryId()).orElseThrow(() -> new RuntimeException("category not found"));
+        Category category = categoryRepo.findById(issueRegisterDto.categoryId()).orElseThrow(() -> new RuntimeException("category not found"));
         newIssue.setCategory(category);
         newIssue.setCitizen(citizen);
 
         Issue createdIssue = issueRepo.save(newIssue);
-        createdIssue.setIssueId("Issue: "+createdIssue.getId());
+        createdIssue.setIssueId("Issue - "+createdIssue.getId());
+        String imageUrl = imageService.saveImage(issueRegisterDto.categoryId(), createdIssue.getIssueId(), imageFile, "Before ");
+        newIssue.setImageUrl(imageUrl);
         Issue updated  = issueRepo.save(createdIssue);
 
         return new IssueResponseDto(

@@ -1,10 +1,7 @@
 package com.civicpulse.civicpulse.controller;
 
 import com.civicpulse.civicpulse.model.User;
-import com.civicpulse.civicpulse.model.dto.IssueDashboardResponseDto;
-import com.civicpulse.civicpulse.model.dto.IssueRequestDto;
-import com.civicpulse.civicpulse.model.dto.IssueResponseDto;
-import com.civicpulse.civicpulse.model.dto.SingleIssueResponseDto;
+import com.civicpulse.civicpulse.model.dto.*;
 import com.civicpulse.civicpulse.repository.jpa.UserRepo;
 import com.civicpulse.civicpulse.service.CitizenService;
 import com.civicpulse.civicpulse.service.ImageService;
@@ -28,24 +25,23 @@ public class CitizenController {
     private IssueService issueService;
 
     @Autowired
-    private ImageService imageService;
-
-    @Autowired
     private CitizenService citizenService;
 
     @Autowired
     private UserRepo userRepo;
 
+    @GetMapping("/hello")
+    @CrossOrigin(origins = "http://localhost:5173")
+    public String hello(){
+        return  "Hello World";
+    }
+
     @PostMapping(value = "/issue", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> reportNewIssue(
-            @Valid @RequestPart("issue") IssueRequestDto issueRequestDto,
-            @Valid @RequestParam(value = "image", required = false) MultipartFile imageFile,
+            @Valid @RequestPart("issue") IssueRegisterDto issueRegisterDto,
+            @Valid @RequestParam(value = "image",required = true) MultipartFile imageFile,
             Authentication authentication) throws Exception {
-
-        String email = authentication.getName();
-        User currentUser = userRepo.findUserByEmail(email);
-        String imageUrl = imageService.saveImage(imageFile, "Before ");
-        return new ResponseEntity<>(issueService.createIssue(issueRequestDto, imageUrl, currentUser), HttpStatus.CREATED);
+        return new ResponseEntity<>(issueService.createIssue(issueRegisterDto, imageFile, authentication), HttpStatus.CREATED);
     }
 
     @GetMapping("issues")

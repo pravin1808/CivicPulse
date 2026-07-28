@@ -1,0 +1,108 @@
+.otp-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-primary);
+  position: relative;
+  padding: 40px 20px;
+}
+
+.otp-card-wrapper {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.otp-logo-section {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.otp-logo-section .otp-logo {
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 14px rgba(194, 109, 36, 0.4);
+}
+
+.otp-logo-section h2 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.otp-logo-section p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.otp-card {
+  width: 100%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.otp-form {
+  padding: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.success-alert {
+  background-color: var(--bg-resolved);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--color-resolved);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.otp-input-field {
+  letter-spacing: 6px;
+  font-size: 1.5rem !important;
+  text-align: center;
+  font-weight: 700;
+}
+
+.otp-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+}
+
+.otp-footer {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 10px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+}
+
+.otp-footer span {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.otp-footer p {
+  color: var(--text-muted);
+}

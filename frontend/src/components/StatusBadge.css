@@ -1,0 +1,47 @@
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  width: fit-content;
+}
+
+.badge-pending {
+  color: var(--color-pending);
+  background-color: var(--bg-pending);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.badge-assigned {
+  color: var(--color-assigned);
+  background-color: var(--bg-assigned);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.badge-inprogress {
+  color: var(--color-inprogress);
+  background-color: var(--bg-inprogress);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.badge-resolved {
+  color: var(--color-resolved);
+  background-color: var(--bg-resolved);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.badge-rejected {
+  color: var(--color-rejected);
+  background-color: var(--bg-rejected);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.badge-unknown {
+  color: var(--text-muted);
+  background-color: #f1f5f9;
+  border: 1px solid var(--border-color);
+}

@@ -1,60 +1,16 @@
-# CivicPulse Frontend
+# React + Vite
 
-Vite + React + TypeScript frontend for CivicPulse. This app is additive and independent from the existing Spring Boot backend.
+This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
-## Features
+Currently, two official plugins are available:
 
-- React Router based navigation
-- Role-based experience for:
-  - `ADMIN`
-  - `WORKER`
-  - `CITIZEN` (user)
-- Dashboards:
-  - Default dashboard (overview cards + recent issues)
-  - Admin dashboard (issues + workers + issue allocation/reallocation)
-  - Worker dashboard (assigned issues)
-  - User dashboard (submitted issues and statuses)
-- Route guards per role
-- Typed models/interfaces:
-  - `Issue`, `Worker`, `User`, `Allocation`
-- Centralized API services and endpoint placeholders
-- Local mock mode so the UI runs before backend wiring
-- Loading, empty, and error states on key pages
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## Run locally
+## React Compiler
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-Open `http://localhost:5173`.
+## Expanding the Oxlint configuration
 
-## Build and lint
-
-```bash
-npm run lint
-npm run build
-```
-
-## Backend integration
-
-Configure environment variables in `frontend/.env` (optional):
-
-```bash
-VITE_API_BASE_URL=http://localhost:8080
-VITE_USE_MOCK_API=false
-```
-
-When `VITE_USE_MOCK_API` is omitted (or not `false`), the app uses local mock data from `src/api/mockData.ts`.
-
-### Current endpoint placeholders
-
-- `GET /api/admin/issues/all`
-- `GET /api/admin/workers`
-- `PATCH /api/admin/issue/assign/{issueId}`
-- `GET /api/citizen/issue/all?citizenId={id}`
-- `GET /api/worker/issues/assigned?workerId={id}`
-
-All endpoint paths are centralized in `src/api/endpoints.ts` for easy updates.
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.

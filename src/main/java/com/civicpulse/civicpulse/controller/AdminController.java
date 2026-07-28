@@ -13,6 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
+@CrossOrigin(origins = "http://localhost:5173")
 public class AdminController {
 
     @Autowired
@@ -68,6 +69,7 @@ public class AdminController {
 
     @PatchMapping("/issue/assign/{issue_id}")
     public ResponseEntity<?> assignIssueToWorker(@Valid @RequestBody AdminUpdateIssueRequestDto adminUpdateIssueRequestDto, @PathVariable String issue_id){
+        System.out.println(1);
         return new ResponseEntity<>(adminService.updateIssue(issue_id, adminUpdateIssueRequestDto), HttpStatus.OK);
     }
 
