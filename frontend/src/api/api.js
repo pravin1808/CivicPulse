@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: '',
+  validateStatus: (status) => (status >= 200 && status < 300) || status === 302,
 });
 
 // Interceptor to inject JWT token in request headers

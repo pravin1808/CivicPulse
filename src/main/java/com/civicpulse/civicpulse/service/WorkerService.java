@@ -84,7 +84,7 @@ public class WorkerService {
         try{
             Issue issue = issueRepo.findByIssueId(issueId);
             User worker = userRepo.findUserByEmail(authentication.getName());
-            if(!Objects.equals(issue.getCitizen().getId(), worker.getId())){
+            if(issue.getWorker()==null || !Objects.equals(issue.getWorker().getId(), worker.getId())){
                 throw new RuntimeException("You are not allowed to update this issue");
             }
 

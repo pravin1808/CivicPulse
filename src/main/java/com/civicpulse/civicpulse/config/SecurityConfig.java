@@ -41,7 +41,8 @@ public class SecurityConfig {
                                 "/api/auth/admin/login",
                                 "/api/auth/worker/login",
                                 "/api/auth/forgot_password",
-                                "/api/auth/verify_otp/login").permitAll()
+                                "/api/auth/verify_otp/login",
+                                "/images/**").permitAll()
 
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/citizen/**").hasRole("CITIZEN")

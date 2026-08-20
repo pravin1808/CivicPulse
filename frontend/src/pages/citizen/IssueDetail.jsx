@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../api/api';
 import { getCategoryName, getDepartmentName, DEPARTMENTS, getCategoriesByDept } from '../../api/categories';
-import { getIssueImage } from '../../utils/imageHelper';
+import { getIssueImage, IMAGE_UNAVAILABLE } from '../../utils/imageHelper';
 import Sidebar from '../../components/Sidebar';
 import TopBar from '../../components/TopBar';
 import StatusBadge from '../../components/StatusBadge';
@@ -485,7 +485,7 @@ const IssueDetail = () => {
                         src={getIssueImage(issue.imageUrl, categoryId, false)} 
                         alt="Before evidence" 
                         className="evidence-img"
-                        onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1590483736622-39da8af7ff8f?auto=format&fit=crop&w=600&q=80' }}
+                        onError={(e) => { e.currentTarget.src = IMAGE_UNAVAILABLE; }}
                       />
                     </div>
 
@@ -496,7 +496,7 @@ const IssueDetail = () => {
                           src={getIssueImage(issue.afterImageUrl, categoryId, true)} 
                           alt="After resolution" 
                           className="evidence-img"
-                          onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1449034446853-66c86144b0ad?auto=format&fit=crop&w=600&q=80' }}
+                          onError={(e) => { e.currentTarget.src = IMAGE_UNAVAILABLE; }}
                         />
                         <div className="resolution-ribbon">
                           <CheckCircle size={16} /> Resolved Successfully

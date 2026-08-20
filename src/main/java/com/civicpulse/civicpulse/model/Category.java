@@ -2,12 +2,6 @@ package com.civicpulse.civicpulse.model;
 
 
 import jakarta.persistence.*;
-import lombok.*;
-
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
 @Entity
 @Table(name = "categories")
 public class Category {
@@ -27,5 +21,10 @@ public class Category {
         this.name = catName;
         this.department = dept;
     }
+
+    protected Category() { }
+    public Long getId() { return id; } public void setId(Long id) { this.id = id; }
+    public String getName() { return name; } public void setName(String name) { this.name = name; }
+    public Department getDepartment() { return department; } public void setDepartment(Department department) { this.department = department; }
 
 }

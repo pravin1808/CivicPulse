@@ -68,6 +68,12 @@ const IssueManagement = () => {
   const handleAssignSubmit = async (e) => {
     e.preventDefault();
     setModalError('');
+
+    if (!selectedWorkerId) {
+      setModalError('Select a department worker before assigning this issue.');
+      return;
+    }
+
     setModalLoading(true);
 
     try {
@@ -101,9 +107,13 @@ const IssueManagement = () => {
     return matchesSearch && matchesStatus && matchesDept;
   });
 
+  const getWorkerDepartmentId = (worker) => Number(
+    worker.dept_Id ?? worker.dept_id ?? worker.deptId ?? worker.departmentId
+  );
+
   // Filter workers that belong to the department of the selected issue
   const eligibleWorkers = selectedIssue 
-    ? workers.filter(w => w.dept_Id === selectedIssue.department)
+    ? workers.filter((worker) => getWorkerDepartmentId(worker) === Number(selectedIssue.department))
     : [];
 
   return (
@@ -267,17 +277,20 @@ const IssueManagement = () => {
                     value={selectedWorkerId}
                     onChange={(e) => setSelectedWorkerId(e.target.value)}
                   >
-                    <option value="">Unassigned / Keep Blank</option>
-                    {eligibleWorkers.map((worker) => (
-                      <option key={worker.id} value={worker.id}>
-                        {worker.name} ({worker.email})
+                    <option value="">Select a worker</option>
+                    {workers.map((worker) => {
+                      const canBeAssigned = getWorkerDepartmentId(worker) === Number(selectedIssue?.department);
+                      return (
+                      <option key={worker.id} value={worker.id} disabled={!canBeAssigned}>
+                        {worker.name} ({worker.email}){canBeAssigned ? '' : ' — different department'}
                       </option>
-                    ))}
+                      );
+                    })}
                   </select>
                 </div>
                 {eligibleWorkers.length === 0 && (
                   <span className="field-hint warning-hint">
-                    No field workers are currently registered under this department. Register workers first to assign.
+                    No registered worker belongs to this issue's department. Workers from other departments are shown but cannot be assigned by the server.
                   </span>
                 )}
               </div>

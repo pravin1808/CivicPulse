@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../api/api';
 import { getCategoryName, getDepartmentName } from '../../api/categories';
-import { getIssueImage } from '../../utils/imageHelper';
+import { getIssueImage, IMAGE_UNAVAILABLE } from '../../utils/imageHelper';
 import Sidebar from '../../components/Sidebar';
 import TopBar from '../../components/TopBar';
 import StatusBadge from '../../components/StatusBadge';
@@ -46,7 +46,9 @@ const AdminIssueDetail = () => {
       const matched = (allIssuesRes.data || []).find(i => i.issueId === id);
       if (matched) {
         setDashboardIssue(matched);
-        setSelectedWorkerId(matched.workerId || '');
+        // The dashboard DTO does not include workerId. Do not discard a
+        // worker selection made during this session after the refresh below.
+        setSelectedWorkerId((currentWorkerId) => matched.workerId ?? currentWorkerId);
         setSelectedStatus(matched.status);
       }
     } catch (err) {
@@ -64,6 +66,12 @@ const AdminIssueDetail = () => {
   const handleAssignSubmit = async (e) => {
     e.preventDefault();
     setActionMessage('');
+
+    if (!selectedWorkerId) {
+      setActionMessage('Select a department worker before assigning this issue.');
+      return;
+    }
+
     setSaveLoading(true);
 
     try {
@@ -118,13 +126,19 @@ const AdminIssueDetail = () => {
     );
   }
 
+  const getWorkerDepartmentId = (worker) => Number(
+    worker.dept_Id ?? worker.dept_id ?? worker.deptId ?? worker.departmentId
+  );
+
   // Workers belonging to this department
   const eligibleWorkers = dashboardIssue
-    ? workers.filter(w => w.dept_Id === dashboardIssue.department)
+    ? workers.filter((worker) => getWorkerDepartmentId(worker) === Number(dashboardIssue.department))
     : [];
 
   // Get current worker name if assigned
-  const currentWorker = workers.find(w => w.id === dashboardIssue?.workerId);
+  const currentWorker = workers.find(
+    (worker) => Number(worker.id) === Number(dashboardIssue?.workerId ?? selectedWorkerId)
+  );
 
   return (
     <div className="dashboard-container">
@@ -166,11 +180,21 @@ const AdminIssueDetail = () => {
                       onChange={(e) => setSelectedWorkerId(e.target.value)}
                       disabled={saveLoading}
                     >
-                      <option value="">Unassigned</option>
-                      {eligibleWorkers.map(w => (
-                        <option key={w.id} value={w.id}>{w.name} ({w.email})</option>
-                      ))}
+                      <option value="">Select a worker</option>
+                      {workers.map((worker) => {
+                        const canBeAssigned = getWorkerDepartmentId(worker) === Number(dashboardIssue?.department);
+                        return (
+                          <option key={worker.id} value={worker.id} disabled={!canBeAssigned}>
+                            {worker.name} ({worker.email}){canBeAssigned ? '' : ' — different department'}
+                          </option>
+                        );
+                      })}
                     </select>
+                    {eligibleWorkers.length === 0 && (
+                      <span className="field-hint warning-hint">
+                        No registered worker belongs to this issue's department.
+                      </span>
+                    )}
                   </div>
 
                   <div className="input-group">
@@ -316,7 +340,7 @@ const AdminIssueDetail = () => {
                       src={getIssueImage(issue.imageUrl, dashboardIssue?.category, false)} 
                       alt="Before evidence" 
                       className="evidence-img"
-                      onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1590483736622-39da8af7ff8f?auto=format&fit=crop&w=600&q=80' }}
+                      onError={(e) => { e.currentTarget.src = IMAGE_UNAVAILABLE; }}
                     />
                   </div>
 
@@ -327,7 +351,7 @@ const AdminIssueDetail = () => {
                         src={getIssueImage(issue.afterImageUrl, dashboardIssue?.category, true)} 
                         alt="After resolution" 
                         className="evidence-img"
-                        onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1449034446853-66c86144b0ad?auto=format&fit=crop&w=600&q=80' }}
+                        onError={(e) => { e.currentTarget.src = IMAGE_UNAVAILABLE; }}
                       />
                       <div className="resolution-ribbon">
                         <CheckCircle2 size={16} /> Resolved Successfully
