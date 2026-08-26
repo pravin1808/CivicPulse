@@ -23,7 +23,6 @@ public class JwtService {
     // Converts our plain string secret key into a secure cryptographic SecretKey object
     private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY_STRING);
-        System.out.println("Key Length = " + keyBytes.length);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 

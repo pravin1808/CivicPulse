@@ -54,7 +54,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            System.err.println("[JwtFilter] Error parsing JWT Token: " + e.getMessage());
+            throw new RuntimeException("Invalid Credentials");
         }
 
         filterChain.doFilter(request, response);
