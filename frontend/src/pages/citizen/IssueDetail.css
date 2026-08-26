@@ -1,3 +1,120 @@
+/* Modern Edit Form Styles (Inherited/Adapted from ReportIssue) */
+.modern-report-card {
+  border-radius: 24px;
+  overflow: hidden;
+  max-width: 850px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08), 0 0 20px rgba(0,0,0,0.03);
+  animation: scaleIn 0.5s ease-out;
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modern-report-card .card-header-bar {
+  background: linear-gradient(135deg, #1e1b4b 0%, #4338ca 100%);
+  color: white;
+  padding: 28px 40px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.modern-report-card .card-header-bar h3 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.modern-report-card .report-form {
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.modern-report-card .input-group label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #1e293b;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.modern-report-card .input-group input,
+.modern-report-card .input-group select,
+.modern-report-card .input-group textarea {
+  width: 100%;
+  padding: 16px 20px;
+  border-radius: 16px;
+  border: 2px solid #e2e8f0;
+  background-color: #f8fafc;
+  color: #0f172a;
+  font-size: 1.05rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.modern-report-card .input-group input:focus,
+.modern-report-card .input-group select:focus,
+.modern-report-card .input-group textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+  background-color: #fff;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+/* Upload styles */
+.upload-box-wrapper { width: 100%; }
+.hidden-file-input { display: none; }
+.upload-label {
+  display: block; width: 100%; border: 2px dashed #cbd5e1; border-radius: 20px;
+  background: rgba(248, 250, 252, 0.8); cursor: pointer; transition: all 0.4s ease;
+}
+.upload-label:hover { border-color: #6366f1; transform: translateY(-4px); }
+.upload-placeholder { padding: 56px 24px; text-align: center; }
+.upload-placeholder h4 { font-size: 1.2rem; font-weight: 700; color: #1e293b; margin: 10px 0; }
+.preview-container { padding: 24px; display: flex; flex-direction: column; align-items: center; }
+.image-preview-thumbnail { max-height: 350px; border-radius: 16px; margin-bottom: 20px; }
+.change-img-text { font-size: 0.9rem; font-weight: 700; color: #6366f1; background: rgba(99, 102, 241, 0.1); padding: 8px 20px; border-radius: 24px; }
+
+.submit-issue-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 24px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.5);
+  transition: all 0.3s ease;
+}
+.submit-issue-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 30px -5px rgba(59, 130, 246, 0.6); }
+
+.cancel-btn {
+  border-radius: 16px;
+  padding: 16px 24px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  height: auto;
+}
+
 .flex-row-between {
   display: flex;
   justify-content: space-between;

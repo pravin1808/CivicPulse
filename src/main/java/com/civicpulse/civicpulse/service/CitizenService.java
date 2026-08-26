@@ -1,5 +1,7 @@
 package com.civicpulse.civicpulse.service;
 
+import com.civicpulse.civicpulse.exception.AccessForbiddenException;
+import com.civicpulse.civicpulse.exception.ResourceNotFoundException;
 import com.civicpulse.civicpulse.model.Category;
 import com.civicpulse.civicpulse.model.Issue;
 import com.civicpulse.civicpulse.model.User;
@@ -16,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CitizenService {
@@ -28,15 +31,21 @@ public class CitizenService {
 
     @Autowired
     private IssueRepo issueRepo;
+
     @Autowired
     private CategoryRepo categoryRepo;
 
-    public List<IssueDashboardResponseDto> getAllIssues(String email){
+    public List<IssueDashboardResponseDto> getAllIssues(String email) {
+        User citizen = userRepo.findUserByEmail(email);
+        if (citizen == null) {
+            throw new ResourceNotFoundException("User not found with email: " + email);
+        }
 
-        List<Issue> allIssues = issueRepo.findByCitizenId(userRepo.findUserByEmail(email).getId());
+        List<Issue> allIssues = issueRepo.findByCitizenId(citizen.getId());
         List<IssueDashboardResponseDto> issueDashboardResponseDtos = new ArrayList<>();
-        for(Issue issue : allIssues){
-            IssueDashboardResponseDto issueDashboardResponseDto = new IssueDashboardResponseDto(
+
+        for (Issue issue : allIssues) {
+            issueDashboardResponseDtos.add(new IssueDashboardResponseDto(
                     issue.getIssueId(),
                     issue.getTitle(),
                     issue.getDescription(),
@@ -53,59 +62,61 @@ public class CitizenService {
                             issue.getCitizen().getEmail(),
                             issue.getCitizen().getPhoneNumber()
                     )
-            );
-            issueDashboardResponseDtos.add(issueDashboardResponseDto);
+            ));
         }
         return issueDashboardResponseDtos;
     }
 
     public SingleIssueResponseDto getIssueById(Authentication authentication, String issueId) {
-        try {
-            Issue issue = issueRepo.findByIssueId(issueId);
-            if (issue.getCitizen().getEmail().equals(authentication.getName())) {
-                return new SingleIssueResponseDto(
-                        issue.getIssueId(),
-                        issue.getTitle(),
-                        issue.getDescription(),
-                        issue.getStatus(),
-                        issue.getCreatedAt(),
-                        issue.getUpdatedAt(),
-                        issue.getImageUrl(),
-                        issue.getAfterImageURl()
-                );
-            } else {
-                throw new RuntimeException("You are not allowed to see other citizens issue");
-            }
-        }catch (Exception e){
-            throw new RuntimeException("Issue not found");
+        Issue issue = Optional.ofNullable(issueRepo.findByIssueId(issueId))
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with ID: " + issueId));
+
+        if (!issue.getCitizen().getEmail().equals(authentication.getName())) {
+            throw new AccessForbiddenException("You are not allowed to view another citizen's issue.");
         }
+
+        return new SingleIssueResponseDto(
+                issue.getIssueId(),
+                issue.getTitle(),
+                issue.getDescription(),
+                issue.getStatus(),
+                issue.getCreatedAt(),
+                issue.getUpdatedAt(),
+                issue.getImageUrl(),
+                issue.getAfterImageURl()
+        );
     }
 
     public IssueResponseDto updateIssueById(IssueRequestDto issueRequestDto, Authentication authentication, MultipartFile imageFile) {
-        Issue issue = issueRepo.findByIssueId(issueRequestDto.issue_id());
+        Issue issue = Optional.ofNullable(issueRepo.findByIssueId(issueRequestDto.issue_id()))
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with ID: " + issueRequestDto.issue_id()));
 
         User citizen = userRepo.findUserByEmail(authentication.getName());
+        if (citizen == null) {
+            throw new ResourceNotFoundException("Authenticated user not found.");
+        }
 
-        if(!citizen.getId().equals(issue.getCitizen().getId())){
-            throw new RuntimeException("You are not eligible to edit the issue");
+        if (!citizen.getId().equals(issue.getCitizen().getId())) {
+            throw new AccessForbiddenException("You are not eligible to edit this issue.");
         }
 
         issue.setTitle(issueRequestDto.title());
         issue.setDescription(issueRequestDto.description());
         issue.setLatitude(issueRequestDto.latitude());
         issue.setLongitude(issueRequestDto.longitude());
-        Category category = categoryRepo.findById(issueRequestDto.categoryId()).orElseThrow(() -> new RuntimeException("Category Not Found"));
+
+        Category category = categoryRepo.findById(issueRequestDto.categoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + issueRequestDto.categoryId()));
         issue.setCategory(category);
 
-        if(imageFile!=null && !imageFile.isEmpty()){
-            try{
+        if (imageFile != null && !imageFile.isEmpty()) {
+            try {
                 Files.deleteIfExists(Path.of(issue.getImageUrl()));
                 String imageUrl = imageService.saveImage(issue.getCategory().getId(), issue.getIssueId(), imageFile, "Before");
                 issue.setImageUrl(imageUrl);
-            }catch (Exception e){
-                throw new RuntimeException("Some error occurred during deleting the image");
+            } catch (Exception e) {
+                throw new ResourceNotFoundException("Error occurred while replacing the issue image.");
             }
-
         }
 
         Issue updatedIssue = issueRepo.save(issue);
@@ -121,10 +132,11 @@ public class CitizenService {
     }
 
     public void deleteIssueById(Authentication authentication, String issueId) {
-        Issue issue = issueRepo.findByIssueId(issueId);
+        Issue issue = Optional.ofNullable(issueRepo.findByIssueId(issueId))
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with ID: " + issueId));
 
-        if(!issue.getCitizen().getEmail().equals(authentication.getName())){
-            throw new RuntimeException("You are not eligible to edit this issue");
+        if (!issue.getCitizen().getEmail().equals(authentication.getName())) {
+            throw new AccessForbiddenException("You are not eligible to delete this issue.");
         }
         issueRepo.delete(issue);
     }

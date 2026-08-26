@@ -1,12 +1,12 @@
 package com.civicpulse.civicpulse.controller;
 
+import com.civicpulse.civicpulse.exception.DuplicateResourceException;
 import com.civicpulse.civicpulse.model.dto.*;
 import com.civicpulse.civicpulse.service.AdminService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,8 +28,8 @@ public class AdminController {
                             "one digit, and one special character (@#$%^&+=!)."
             );
         }
-        if(adminService.checkIfUserExist(workerRegisterRequestDto.email())){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("User with the provided E-mail ID already exists try to login using using credentials or use the option of forgot password");
+        if (adminService.checkIfUserExist(workerRegisterRequestDto.email())) {
+            throw new DuplicateResourceException("A user with email '" + workerRegisterRequestDto.email() + "' already exists.");
         }
 
         adminService.addNewWorker(workerRegisterRequestDto);
@@ -47,7 +47,7 @@ public class AdminController {
     }
 
     @PutMapping("/worker/{worker_id}")
-    public ResponseEntity<WorkerResponseDto> updateWorkerById(@RequestBody WorkerRequestDto workerRequestDto, @PathVariable Long worker_id){
+    public ResponseEntity<WorkerResponseDto> updateWorkerById(@Valid @RequestBody WorkerRequestDto workerRequestDto, @PathVariable Long worker_id){
         return new ResponseEntity<>(adminService.updateWorkerById(workerRequestDto, worker_id), HttpStatus.OK);
     }
 
@@ -69,7 +69,6 @@ public class AdminController {
 
     @PatchMapping("/issue/assign/{issue_id}")
     public ResponseEntity<?> assignIssueToWorker(@Valid @RequestBody AdminUpdateIssueRequestDto adminUpdateIssueRequestDto, @PathVariable String issue_id){
-        System.out.println(1);
         return new ResponseEntity<>(adminService.updateIssue(issue_id, adminUpdateIssueRequestDto), HttpStatus.OK);
     }
 

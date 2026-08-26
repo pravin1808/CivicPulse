@@ -1,5 +1,7 @@
 package com.civicpulse.civicpulse.service;
 
+import com.civicpulse.civicpulse.exception.AccessForbiddenException;
+import com.civicpulse.civicpulse.exception.ResourceNotFoundException;
 import com.civicpulse.civicpulse.model.Issue;
 import com.civicpulse.civicpulse.model.IssueStatus;
 import com.civicpulse.civicpulse.model.User;
@@ -15,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class WorkerService {
@@ -29,13 +32,16 @@ public class WorkerService {
     private IssueRepo issueRepo;
 
     public List<IssueWorkerResponseDto> getAllIssuesOfWorker(Authentication authentication) {
-
         User worker = userRepo.findUserByEmail(authentication.getName());
-        List<Issue> allIssuesOfWorker = issueRepo.findAvailableIssuesForWorker(worker.getDepartmentId(), worker.getId());
+        if (worker == null) {
+            throw new ResourceNotFoundException("Authenticated worker not found.");
+        }
 
+        List<Issue> allIssuesOfWorker = issueRepo.findAvailableIssuesForWorker(worker.getDepartmentId(), worker.getId());
         List<IssueWorkerResponseDto> allIssues = new ArrayList<>();
-        for(Issue issue : allIssuesOfWorker){
-            IssueWorkerResponseDto workerIssue = new IssueWorkerResponseDto(
+
+        for (Issue issue : allIssuesOfWorker) {
+            allIssues.add(new IssueWorkerResponseDto(
                     issue.getIssueId(),
                     issue.getTitle(),
                     issue.getDescription(),
@@ -45,78 +51,75 @@ public class WorkerService {
                     issue.getLongitude(),
                     issue.getCategory().getId(),
                     issue.getAfterImageURl()
-            );
-            allIssues.add(workerIssue);
+            ));
         }
         return allIssues;
     }
 
     public IssueWorkerResponseDto getIssueOfWorkerById(Authentication authentication, String issueId) {
-        try {
-            Issue issue = issueRepo.findByIssueId(issueId);
-            System.out.println(issue.getIssueId());
-            User worker = userRepo.findUserByEmail(authentication.getName());
-            System.out.println(2);
-            if (!Objects.equals(issue.getCitizen().getId(), worker.getId())) {
-                System.out.println(3);
-                throw new RuntimeException("You are allowed to see this Issue");
-            }
-            System.out.println(4);
+        Issue issue = Optional.ofNullable(issueRepo.findByIssueId(issueId))
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with ID: " + issueId));
 
-
-            return new IssueWorkerResponseDto(
-                    issue.getIssueId(),
-                    issue.getTitle(),
-                    issue.getDescription(),
-                    issue.getStatus(),
-                    issue.getImageUrl(),
-                    issue.getLatitude(),
-                    issue.getLongitude(),
-                    issue.getCategory().getId(),
-                    issue.getAfterImageURl()
-            );
-        }catch (Exception e){
-            throw new RuntimeException("Issue not found");
+        User worker = userRepo.findUserByEmail(authentication.getName());
+        if (worker == null) {
+            throw new ResourceNotFoundException("Authenticated worker not found.");
         }
+
+        if (!Objects.equals(issue.getWorker() != null ? issue.getWorker().getId() : null, worker.getId())) {
+            throw new AccessForbiddenException("You are not allowed to view this issue.");
+        }
+
+        return new IssueWorkerResponseDto(
+                issue.getIssueId(),
+                issue.getTitle(),
+                issue.getDescription(),
+                issue.getStatus(),
+                issue.getImageUrl(),
+                issue.getLatitude(),
+                issue.getLongitude(),
+                issue.getCategory().getId(),
+                issue.getAfterImageURl()
+        );
     }
 
     public IssueWorkerResponseDto updateIssueStatus(IssueUpdateWorkerDto issueUpdateDto, String issueId, Authentication authentication, MultipartFile imageFile) {
-        try{
-            Issue issue = issueRepo.findByIssueId(issueId);
-            User worker = userRepo.findUserByEmail(authentication.getName());
-            if(issue.getWorker()==null || !Objects.equals(issue.getWorker().getId(), worker.getId())){
-                throw new RuntimeException("You are not allowed to update this issue");
-            }
+        Issue issue = Optional.ofNullable(issueRepo.findByIssueId(issueId))
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with ID: " + issueId));
 
-            if(issueUpdateDto.status()==null){
-                throw new RuntimeException("Provide the status to modify the issue");
-            }
-            if ((issueUpdateDto.status() == IssueStatus.RESOLVED)) {
-                if(imageFile != null && imageFile.isEmpty()){
-                    throw new RuntimeException("After Image is required to show the status of issue as resolved");
-                }else{
-                    assert imageFile != null;
-                    String imageUrl = imageService.saveImage(issue.getCategory().getId(), issue.getIssueId(), imageFile, "After");
-                    issue.setAfterImageURl(imageUrl);
-                }
-            }
-            issue.setStatus(issueUpdateDto.status());
-            Issue updatedIssue = issueRepo.save(issue);
-
-            return new IssueWorkerResponseDto(
-                    updatedIssue.getIssueId(),
-                    updatedIssue.getTitle(),
-                    updatedIssue.getDescription(),
-                    updatedIssue.getStatus(),
-                    updatedIssue.getImageUrl(),
-                    updatedIssue.getLatitude(),
-                    updatedIssue.getLongitude(),
-                    updatedIssue.getCategory().getId(),
-                    updatedIssue.getAfterImageURl()
-            );
-
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to update issue");
+        User worker = userRepo.findUserByEmail(authentication.getName());
+        if (worker == null) {
+            throw new ResourceNotFoundException("Authenticated worker not found.");
         }
+
+        if (issue.getWorker() == null || !Objects.equals(issue.getWorker().getId(), worker.getId())) {
+            throw new AccessForbiddenException("You are not allowed to update this issue.");
+        }
+
+        if (issueUpdateDto.status() == IssueStatus.RESOLVED) {
+            if (imageFile == null || imageFile.isEmpty()) {
+                throw new IllegalArgumentException("An 'after' image is required to mark an issue as RESOLVED.");
+            }
+            try {
+                String imageUrl = imageService.saveImage(issue.getCategory().getId(), issue.getIssueId(), imageFile, "After");
+                issue.setAfterImageURl(imageUrl);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to save the resolution image. Please try again.");
+            }
+        }
+
+        issue.setStatus(issueUpdateDto.status());
+        Issue updatedIssue = issueRepo.save(issue);
+
+        return new IssueWorkerResponseDto(
+                updatedIssue.getIssueId(),
+                updatedIssue.getTitle(),
+                updatedIssue.getDescription(),
+                updatedIssue.getStatus(),
+                updatedIssue.getImageUrl(),
+                updatedIssue.getLatitude(),
+                updatedIssue.getLongitude(),
+                updatedIssue.getCategory().getId(),
+                updatedIssue.getAfterImageURl()
+        );
     }
 }

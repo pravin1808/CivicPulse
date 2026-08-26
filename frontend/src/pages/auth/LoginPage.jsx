@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/api';
+import { extractErrorMessage } from '../../utils/errorHelper';
 import { ShieldAlert, User, ShieldCheck, HardHat, Mail, Lock, AlertCircle, ArrowLeft } from 'lucide-react';
 import './LoginPage.css';
 
@@ -38,11 +39,7 @@ const LoginPage = () => {
       }
     } catch (err) {
       console.error(err);
-      if (err.response && err.response.data) {
-        setError(typeof err.response.data === 'string' ? err.response.data : 'Invalid email or password.');
-      } else {
-        setError('Failed to connect to the server. Please verify your backend is running.');
-      }
+      setError(extractErrorMessage(err, 'Failed to connect to the server. Please verify your backend is running.'));
     } finally {
       setLoading(false);
     }

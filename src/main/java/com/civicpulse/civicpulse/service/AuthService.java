@@ -1,5 +1,8 @@
 package com.civicpulse.civicpulse.service;
 
+import com.civicpulse.civicpulse.exception.InvalidOtpException;
+import com.civicpulse.civicpulse.exception.OtpExpiredException;
+import com.civicpulse.civicpulse.exception.ResourceNotFoundException;
 import com.civicpulse.civicpulse.model.Role;
 import com.civicpulse.civicpulse.model.User;
 import com.civicpulse.civicpulse.model.cache.TemporaryUser;
@@ -33,22 +36,29 @@ public class AuthService {
     @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    public void addNewUser(CitizenRegisterRequestDto citizenRegisterRequestDto){
+    public void addNewUser(CitizenRegisterRequestDto citizenRegisterRequestDto) {
         SecureRandom random = new SecureRandom();
         String otp = String.valueOf(100000 + random.nextInt(900000));
-        TemporaryUser tempUser = new TemporaryUser(citizenRegisterRequestDto.email(), citizenRegisterRequestDto.name(), citizenRegisterRequestDto.phoneNumber(), citizenRegisterRequestDto.address(),bCryptPasswordEncoder.encode(citizenRegisterRequestDto.password()),otp);
+        TemporaryUser tempUser = new TemporaryUser(
+                citizenRegisterRequestDto.email(),
+                citizenRegisterRequestDto.name(),
+                citizenRegisterRequestDto.phoneNumber(),
+                citizenRegisterRequestDto.address(),
+                bCryptPasswordEncoder.encode(citizenRegisterRequestDto.password()),
+                otp
+        );
         tempUserRepo.save(tempUser);
         emailService.sendOtpMail(tempUser.getEmail(), tempUser.getOtp());
     }
 
     public String verifyAndRegisterUser(String email, String otp) {
         Optional<TemporaryUser> cachedUser = tempUserRepo.findById(email);
-        if(cachedUser.isEmpty()){
+        if (cachedUser.isEmpty()) {
             return "SESSION_EXPIRED";
         }
         TemporaryUser temporaryUser = cachedUser.get();
-        if(!temporaryUser.getOtp().equals(otp)){
-            return"INVALID_OTP";
+        if (!temporaryUser.getOtp().equals(otp)) {
+            return "INVALID_OTP";
         }
         User finalizedUser = new User();
         finalizedUser.setName(temporaryUser.getName());
@@ -59,18 +69,21 @@ public class AuthService {
         finalizedUser.setRole(Role.CITIZEN);
         finalizedUser.setEnabled(true);
         userRepo.save(finalizedUser);
-        //Clean up the Redis cache immediately so the RAM is freed up right away
+        // Clean up the Redis cache immediately so the RAM is freed up right away
         tempUserRepo.deleteById(email);
         return "SUCCESS";
     }
 
     public boolean checkIfUserExist(String email) {
         User user = userRepo.findUserByEmail(email);
-        return user!=null;
+        return user != null;
     }
 
     public Role whatRole(String email) {
         User user = userRepo.findUserByEmail(email);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found with email: " + email);
+        }
         return user.getRole();
     }
 
@@ -79,27 +92,31 @@ public class AuthService {
         String otp = String.valueOf(100000 + random.nextInt(900000));
         emailService.sendOtpMail(email, otp);
         User user = userRepo.findUserByEmail(email);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found with email: " + email);
+        }
         user.setOtp(otp);
         user.setOtpExpTime(LocalDateTime.now().plusMinutes(5));
+        userRepo.save(user);
     }
 
     public String verifyOtpAndLogin(OtpRequestDto otpRequestDto) {
         User user = userRepo.findUserByEmail(otpRequestDto.email());
-        if(user.getOtp()==null || user.getOtpExpTime()==null){
-            throw new RuntimeException("OTP is not requested");
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found with email: " + otpRequestDto.email());
         }
-        boolean isBefore = LocalDateTime.now().isBefore(user.getOtpExpTime());
-        if (!isBefore) {
-            throw new IllegalStateException("OTP has expired.");
+        if (user.getOtp() == null || user.getOtpExpTime() == null) {
+            throw new InvalidOtpException("No OTP was requested for this account.");
         }
-
+        if (LocalDateTime.now().isAfter(user.getOtpExpTime())) {
+            throw new OtpExpiredException("OTP has expired. Please request a new one.");
+        }
         if (!user.getOtp().equals(otpRequestDto.otp())) {
-            throw new IllegalArgumentException("Invalid OTP.");
+            throw new InvalidOtpException("Invalid OTP. Please check and try again.");
         }
         user.setOtp(null);
         user.setOtpExpTime(null);
         userRepo.save(user);
-
         return jwtService.generateToken(user.getEmail(), "ROLE_" + user.getRole().name());
     }
 }

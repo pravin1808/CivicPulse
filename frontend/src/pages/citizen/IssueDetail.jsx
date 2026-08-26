@@ -246,8 +246,8 @@ const IssueDetail = () => {
           )}
 
           {isEditing ? (
-            <div className="report-card glass-card">
-              <div className="card-header-bar edit-header">
+            <div className="modern-report-card">
+              <div className="card-header-bar">
                 <Edit3 size={20} className="header-icon" />
                 <h3>Modify Issue Details</h3>
               </div>
@@ -374,11 +374,11 @@ const IssueDetail = () => {
                 </div>
 
                 <div className="edit-actions-row">
-                  <button type="button" className="btn btn-secondary" onClick={handleCancelEdit} disabled={saveLoading}>
+                  <button type="button" className="btn btn-secondary cancel-btn" onClick={handleCancelEdit} disabled={saveLoading}>
                     <X size={16} /> Cancel
                   </button>
-                  <button type="submit" className="btn btn-primary" disabled={saveLoading}>
-                    <Save size={16} /> {saveLoading ? 'Saving...' : 'Save Changes'}
+                  <button type="submit" className="submit-issue-btn" disabled={saveLoading} style={{ marginTop: 0, width: 'auto', flex: 1 }}>
+                    <Save size={20} /> {saveLoading ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
               </form>

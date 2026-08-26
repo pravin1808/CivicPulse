@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/api';
+import { extractErrorMessage } from '../../utils/errorHelper';
 import { ShieldAlert, User, Mail, Phone, MapPin, Lock, AlertCircle, ArrowLeft, Check } from 'lucide-react';
 import './RegisterPage.css';
 
@@ -54,11 +55,7 @@ const RegisterPage = () => {
       navigate(`/verify-otp?email=${encodeURIComponent(registeredEmail || email)}`);
     } catch (err) {
       console.error(err);
-      if (err.response && err.response.data) {
-        setError(typeof err.response.data === 'string' ? err.response.data : 'Registration failed. E-mail may already be in use.');
-      } else {
-        setError('Failed to connect to the server. Please verify your backend is running.');
-      }
+      setError(extractErrorMessage(err, 'Failed to connect to the server. Please verify your backend is running.'));
     } finally {
       setLoading(false);
     }

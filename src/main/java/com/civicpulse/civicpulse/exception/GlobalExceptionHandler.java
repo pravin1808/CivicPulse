@@ -1,0 +1,150 @@
+package com.civicpulse.civicpulse.exception;
+
+import com.civicpulse.civicpulse.model.dto.ErrorResponseDto;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.stream.Collectors;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    // ── 400 Bad Request ──────────────────────────────────────────────────────
+
+    /**
+     * Handles @Valid / @Validated failures on @RequestBody DTOs.
+     * Collects all field-level messages and joins them.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponseDto> handleValidation(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult().getFieldErrors()
+                .stream()
+                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.joining(", "));
+        return build(HttpStatus.BAD_REQUEST, "Validation Failed", message);
+    }
+
+    /**
+     * Handles malformed JSON / unreadable request body.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponseDto> handleUnreadable(HttpMessageNotReadableException ex) {
+        return build(HttpStatus.BAD_REQUEST, "Malformed Request",
+                "Request body is missing or contains invalid JSON.");
+    }
+
+    /**
+     * Handles missing required @RequestParam.
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponseDto> handleMissingParam(MissingServletRequestParameterException ex) {
+        return build(HttpStatus.BAD_REQUEST, "Missing Parameter",
+                "Required parameter '" + ex.getParameterName() + "' is missing.");
+    }
+
+    /**
+     * Handles type mismatch on path variables or request params (e.g. string where Long expected).
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponseDto> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return build(HttpStatus.BAD_REQUEST, "Type Mismatch",
+                "Parameter '" + ex.getName() + "' has an invalid value: '" + ex.getValue() + "'.");
+    }
+
+    /**
+     * Handles invalid OTP supplied by the user.
+     */
+    @ExceptionHandler(InvalidOtpException.class)
+    public ResponseEntity<ErrorResponseDto> handleInvalidOtp(InvalidOtpException ex) {
+        return build(HttpStatus.BAD_REQUEST, "Invalid OTP", ex.getMessage());
+    }
+
+    /**
+     * Handles uploaded files that exceed the configured size limit.
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponseDto> handleMaxUpload(MaxUploadSizeExceededException ex) {
+        return build(HttpStatus.BAD_REQUEST, "File Too Large",
+                "Uploaded file exceeds the maximum allowed size.");
+    }
+
+    // ── 403 Forbidden ────────────────────────────────────────────────────────
+
+    /**
+     * Handles attempts to access or modify a resource the user does not own.
+     */
+    @ExceptionHandler(AccessForbiddenException.class)
+    public ResponseEntity<ErrorResponseDto> handleForbidden(AccessForbiddenException ex) {
+        return build(HttpStatus.FORBIDDEN, "Access Denied", ex.getMessage());
+    }
+
+    // ── 404 Not Found ────────────────────────────────────────────────────────
+
+    /**
+     * Handles any resource that could not be found in the database.
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponseDto> handleNotFound(ResourceNotFoundException ex) {
+        return build(HttpStatus.NOT_FOUND, "Resource Not Found", ex.getMessage());
+    }
+
+    // ── 409 Conflict ─────────────────────────────────────────────────────────
+
+    /**
+     * Handles duplicate resource creation (e.g. email already registered).
+     */
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ErrorResponseDto> handleDuplicate(DuplicateResourceException ex) {
+        return build(HttpStatus.CONFLICT, "Conflict", ex.getMessage());
+    }
+
+    // ── 410 Gone ─────────────────────────────────────────────────────────────
+
+    /**
+     * Handles expired OTP / expired session.
+     */
+    @ExceptionHandler(OtpExpiredException.class)
+    public ResponseEntity<ErrorResponseDto> handleOtpExpired(OtpExpiredException ex) {
+        return build(HttpStatus.GONE, "Session Expired", ex.getMessage());
+    }
+
+    // ── Spring ResponseStatusException (used in AdminService) ────────────────
+
+    /**
+     * Passes through Spring's own ResponseStatusException with its original status.
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponseDto> handleResponseStatus(ResponseStatusException ex) {
+        return build(HttpStatus.valueOf(ex.getStatusCode().value()),
+                "Request Failed",
+                ex.getReason() != null ? ex.getReason() : ex.getMessage());
+    }
+
+    // ── 500 Internal Server Error (fallback) ─────────────────────────────────
+
+    /**
+     * Catch-all fallback for any unhandled exception — prevents stack-trace leaks.
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponseDto> handleGeneral(Exception ex) {
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error",
+                "An unexpected error occurred. Please try again later.");
+    }
+
+    // ── Helper ───────────────────────────────────────────────────────────────
+
+    private ResponseEntity<ErrorResponseDto> build(HttpStatus status, String error, String message) {
+        return ResponseEntity
+                .status(status)
+                .body(new ErrorResponseDto(status.value(), error, message));
+    }
+}

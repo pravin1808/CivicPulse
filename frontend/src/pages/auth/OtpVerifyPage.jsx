@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/api';
+import { extractErrorMessage } from '../../utils/errorHelper';
 import { ShieldAlert, KeyRound, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import './OtpVerifyPage.css';
 
@@ -63,11 +64,7 @@ const OtpVerifyPage = () => {
       }
     } catch (err) {
       console.error(err);
-      if (err.response && err.response.data) {
-        setError(typeof err.response.data === 'string' ? err.response.data : 'Invalid OTP. Please check your mail and try again.');
-      } else {
-        setError('Verification failed. Please try again.');
-      }
+      setError(extractErrorMessage(err, 'Verification failed. Please try again.'));
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,8 @@
 package com.civicpulse.civicpulse.service;
 
+import com.civicpulse.civicpulse.exception.AccessForbiddenException;
+import com.civicpulse.civicpulse.exception.DuplicateResourceException;
+import com.civicpulse.civicpulse.exception.ResourceNotFoundException;
 import com.civicpulse.civicpulse.model.Issue;
 import com.civicpulse.civicpulse.model.Role;
 import com.civicpulse.civicpulse.model.User;
@@ -31,11 +34,10 @@ public class AdminService {
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
     public boolean checkIfUserExist(String email) {
-        User user = userRepo.findUserByEmail(email);
-        return user!=null;
+        return userRepo.findUserByEmail(email) != null;
     }
 
-    public void addNewWorker(WorkerRegisterRequestDto workerRegisterRequestDto){
+    public void addNewWorker(WorkerRegisterRequestDto workerRegisterRequestDto) {
         User worker = new User();
         worker.setName(workerRegisterRequestDto.name());
         worker.setPhoneNumber(workerRegisterRequestDto.phoneNumber());
@@ -51,8 +53,8 @@ public class AdminService {
     public List<IssueDashboardResponseDto> getAllIssues() {
         List<Issue> allIssues = issueRepo.findAll();
         List<IssueDashboardResponseDto> issueDashboardResponseDtos = new ArrayList<>();
-        for(Issue issue : allIssues){
-            IssueDashboardResponseDto issueDashboardResponseDto = new IssueDashboardResponseDto(
+        for (Issue issue : allIssues) {
+            issueDashboardResponseDtos.add(new IssueDashboardResponseDto(
                     issue.getIssueId(),
                     issue.getTitle(),
                     issue.getDescription(),
@@ -69,49 +71,42 @@ public class AdminService {
                             issue.getCitizen().getEmail(),
                             issue.getCitizen().getPhoneNumber()
                     )
-            );
-            issueDashboardResponseDtos.add(issueDashboardResponseDto);
+            ));
         }
         return issueDashboardResponseDtos;
     }
 
     public List<WorkerResponseDto> getAllWorkersByDept() {
         List<User> allWorkers = userRepo.findByRoleOrderByDepartmentIdAsc(Role.WORKER);
-
         List<WorkerResponseDto> workerResponseDtos = new ArrayList<>();
-
-        for(User worker : allWorkers){
-            WorkerResponseDto workerResponse = new WorkerResponseDto(
+        for (User worker : allWorkers) {
+            workerResponseDtos.add(new WorkerResponseDto(
                     worker.getId(),
                     worker.getName(),
                     worker.getEmail(),
                     worker.getPhoneNumber(),
                     worker.getAddress(),
                     worker.getDepartmentId()
-            );
-
-            workerResponseDtos.add(workerResponse);
-
+            ));
         }
-
         return workerResponseDtos;
     }
 
     @Transactional
     public IssueDashboardResponseDto updateIssue(String issueId, AdminUpdateIssueRequestDto request) {
         Issue issue = Optional.ofNullable(issueRepo.findByIssueId(issueId))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with ID: " + issueId));
 
         if (request.workerId() != null) {
             User worker = userRepo.findById(request.workerId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+                    .orElseThrow(() -> new ResourceNotFoundException("Worker not found with ID: " + request.workerId()));
 
             if (worker.getRole() != Role.WORKER) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is not a worker");
+                throw new AccessForbiddenException("The selected user is not a worker.");
             }
 
             if (!worker.getDepartmentId().equals(issue.getCategory().getDepartment().getId())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Worker belongs to another department");
+                throw new AccessForbiddenException("Worker belongs to a different department than the issue's category.");
             }
 
             issue.setWorker(worker);
@@ -122,7 +117,6 @@ public class AdminService {
         }
 
         issue.setUpdatedAt(LocalDateTime.now());
-
         Issue updatedIssue = issueRepo.save(issue);
 
         return new IssueDashboardResponseDto(
@@ -137,16 +131,17 @@ public class AdminService {
                 updatedIssue.getCategory().getDepartment().getId(),
                 updatedIssue.getCategory().getId(),
                 new IssuesCitizenDto(
-                        issue.getCitizen().getId(),
-                        issue.getCitizen().getName(),
-                        issue.getCitizen().getEmail(),
-                        issue.getCitizen().getPhoneNumber()
+                        updatedIssue.getCitizen().getId(),
+                        updatedIssue.getCitizen().getName(),
+                        updatedIssue.getCitizen().getEmail(),
+                        updatedIssue.getCitizen().getPhoneNumber()
                 )
         );
     }
 
     public WorkerResponseDto getWorkerById(Long workerId) {
-        User worker = userRepo.findById(workerId).orElseThrow(() -> new RuntimeException("Worker not found"));
+        User worker = userRepo.findById(workerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Worker not found with ID: " + workerId));
 
         return new WorkerResponseDto(
                 worker.getId(),
@@ -156,11 +151,11 @@ public class AdminService {
                 worker.getAddress(),
                 worker.getDepartmentId()
         );
-
     }
 
     public WorkerResponseDto updateWorkerById(WorkerRequestDto workerRequestDto, Long workerId) {
-        User worker = userRepo.findById(workerId).orElseThrow(() -> new RuntimeException("Worker not found"));
+        User worker = userRepo.findById(workerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Worker not found with ID: " + workerId));
 
         worker.setName(workerRequestDto.name());
         worker.setPhoneNumber(workerRequestDto.phoneNumber());
@@ -180,26 +175,24 @@ public class AdminService {
     }
 
     public void deleteWorkerById(Long workerId) {
-        userRepo.delete(userRepo.findById(workerId).orElseThrow(() -> new RuntimeException("Worker not found")));
+        User worker = userRepo.findById(workerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Worker not found with ID: " + workerId));
+        userRepo.delete(worker);
     }
 
     public SingleIssueResponseDto getIssueById(String issueId) {
-        try{
-            Issue issue = issueRepo.findByIssueId(issueId);
+        Issue issue = Optional.ofNullable(issueRepo.findByIssueId(issueId))
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with ID: " + issueId));
 
-            return new SingleIssueResponseDto(
-                    issue.getIssueId(),
-                    issue.getTitle(),
-                    issue.getDescription(),
-                    issue.getStatus(),
-                    issue.getCreatedAt(),
-                    issue.getUpdatedAt(),
-                    issue.getImageUrl(),
-                    issue.getAfterImageURl()
-            );
-
-        }catch (Exception e){
-            throw new RuntimeException("Issue not found");
-        }
+        return new SingleIssueResponseDto(
+                issue.getIssueId(),
+                issue.getTitle(),
+                issue.getDescription(),
+                issue.getStatus(),
+                issue.getCreatedAt(),
+                issue.getUpdatedAt(),
+                issue.getImageUrl(),
+                issue.getAfterImageURl()
+        );
     }
 }

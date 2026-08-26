@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/api';
+import { extractErrorMessage } from '../../utils/errorHelper';
 import { DEPARTMENTS, getCategoriesByDept } from '../../api/categories';
 import Sidebar from '../../components/Sidebar';
 import TopBar from '../../components/TopBar';
@@ -95,11 +96,7 @@ const ReportIssue = () => {
       navigate('/citizen/dashboard');
     } catch (err) {
       console.error(err);
-      if (err.response && err.response.data) {
-        setError(typeof err.response.data === 'string' ? err.response.data : 'Failed to submit issue. Please verify fields.');
-      } else {
-        setError('Failed to submit issue due to server error.');
-      }
+      setError(extractErrorMessage(err, 'Failed to submit issue. Please verify all fields.'));
     } finally {
       setLoading(false);
     }

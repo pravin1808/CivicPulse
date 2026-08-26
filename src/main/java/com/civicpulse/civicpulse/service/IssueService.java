@@ -1,5 +1,6 @@
 package com.civicpulse.civicpulse.service;
 
+import com.civicpulse.civicpulse.exception.ResourceNotFoundException;
 import com.civicpulse.civicpulse.model.Category;
 import com.civicpulse.civicpulse.model.Issue;
 import com.civicpulse.civicpulse.model.User;
@@ -36,7 +37,12 @@ public class IssueService {
     public IssueResponseDto createIssue(@Valid IssueRegisterDto issueRegisterDto, MultipartFile imageFile, Authentication authentication) throws Exception {
         String email = authentication.getName();
         User citizen = userRepo.findUserByEmail(email);
+        if (citizen == null) {
+            throw new ResourceNotFoundException("Authenticated user not found.");
+        }
 
+        Category category = categoryRepo.findById(issueRegisterDto.categoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + issueRegisterDto.categoryId()));
 
         Issue newIssue = new Issue();
         newIssue.setTitle(issueRegisterDto.title());
@@ -44,16 +50,14 @@ public class IssueService {
         newIssue.setLatitude(issueRegisterDto.latitude());
         newIssue.setLongitude(issueRegisterDto.longitude());
         newIssue.setCreatedAt(LocalDateTime.now());
-
-        Category category = categoryRepo.findById(issueRegisterDto.categoryId()).orElseThrow(() -> new RuntimeException("category not found"));
         newIssue.setCategory(category);
         newIssue.setCitizen(citizen);
 
         Issue createdIssue = issueRepo.save(newIssue);
-        createdIssue.setIssueId("Issue - "+createdIssue.getId());
+        createdIssue.setIssueId("Issue - " + createdIssue.getId());
         String imageUrl = imageService.saveImage(issueRegisterDto.categoryId(), createdIssue.getIssueId(), imageFile, "Before ");
-        newIssue.setImageUrl(imageUrl);
-        Issue updated  = issueRepo.save(createdIssue);
+        createdIssue.setImageUrl(imageUrl);
+        Issue updated = issueRepo.save(createdIssue);
 
         return new IssueResponseDto(
                 updated.getIssueId(),
@@ -64,5 +68,4 @@ public class IssueService {
                 updated.getUpdatedAt()
         );
     }
-
 }

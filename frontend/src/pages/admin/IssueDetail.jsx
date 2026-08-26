@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../api/api';
+import { extractErrorMessage } from '../../utils/errorHelper';
 import { getCategoryName, getDepartmentName } from '../../api/categories';
 import { getIssueImage, IMAGE_UNAVAILABLE } from '../../utils/imageHelper';
 import Sidebar from '../../components/Sidebar';
@@ -86,11 +87,7 @@ const AdminIssueDetail = () => {
       fetchDetails(); // Refresh
     } catch (err) {
       console.error(err);
-      if (err.response && err.response.data) {
-        setActionMessage(typeof err.response.data === 'string' ? err.response.data : 'Failed to save changes.');
-      } else {
-        setActionMessage('Server error while saving assignment.');
-      }
+      setActionMessage(extractErrorMessage(err, 'Failed to save changes. Please try again.'));
     } finally {
       setSaveLoading(false);
     }

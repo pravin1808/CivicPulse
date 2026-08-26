@@ -55,7 +55,7 @@ public class CitizenController {
     }
 
     @PutMapping("/issue")
-    public ResponseEntity<IssueResponseDto> updateIssueById(@RequestPart("issue") IssueRequestDto issueRequestDto,
+    public ResponseEntity<IssueResponseDto> updateIssueById(@Valid @RequestPart("issue") IssueRequestDto issueRequestDto,
                                                             Authentication authentication,
                                                             @RequestParam(value = "image", required = false) MultipartFile imageFile){
         return new ResponseEntity<>(citizenService.updateIssueById(issueRequestDto, authentication, imageFile), HttpStatus.FOUND);

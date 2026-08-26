@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../api/api';
+import { extractErrorMessage } from '../../utils/errorHelper';
 import { DEPARTMENTS, getDepartmentName } from '../../api/categories';
 import Sidebar from '../../components/Sidebar';
 import TopBar from '../../components/TopBar';
@@ -127,11 +128,7 @@ const WorkerManagement = () => {
       fetchWorkers();
     } catch (err) {
       console.error(err);
-      if (err.response && err.response.data) {
-        setModalError(typeof err.response.data === 'string' ? err.response.data : 'Operation failed. Verify password complexity requirements.');
-      } else {
-        setModalError('Server error while saving worker.');
-      }
+      setModalError(extractErrorMessage(err, 'Operation failed. Verify password complexity requirements.'));
     } finally {
       setModalLoading(false);
     }

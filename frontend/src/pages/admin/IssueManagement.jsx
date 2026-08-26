@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/api';
+import { extractErrorMessage } from '../../utils/errorHelper';
 import { getCategoryName, getDepartmentName, DEPARTMENTS } from '../../api/categories';
 import Sidebar from '../../components/Sidebar';
 import TopBar from '../../components/TopBar';
@@ -87,11 +88,7 @@ const IssueManagement = () => {
       fetchData(); // refresh data
     } catch (err) {
       console.error(err);
-      if (err.response && err.response.data) {
-        setModalError(typeof err.response.data === 'string' ? err.response.data : 'Failed to update issue.');
-      } else {
-        setModalError('Server error while assigning issue.');
-      }
+      setModalError(extractErrorMessage(err, 'Failed to update issue. Please try again.'));
     } finally {
       setModalLoading(false);
     }
