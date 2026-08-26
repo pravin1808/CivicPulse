@@ -119,7 +119,7 @@ const ReportIssue = () => {
             </Link>
           </div>
 
-          <div className="report-card glass-card">
+          <div className="modern-report-card">
             <div className="card-header-bar">
               <Sparkles size={20} className="header-icon" />
               <h3>Report Municipal Grievance</h3>
