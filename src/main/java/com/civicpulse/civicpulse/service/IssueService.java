@@ -3,6 +3,7 @@ package com.civicpulse.civicpulse.service;
 import com.civicpulse.civicpulse.exception.ResourceNotFoundException;
 import com.civicpulse.civicpulse.model.Category;
 import com.civicpulse.civicpulse.model.Issue;
+import com.civicpulse.civicpulse.model.JwtPrincipal;
 import com.civicpulse.civicpulse.model.User;
 import com.civicpulse.civicpulse.model.dto.IssueRegisterDto;
 import com.civicpulse.civicpulse.model.dto.IssueResponseDto;
@@ -35,11 +36,9 @@ public class IssueService {
 
     @Transactional
     public IssueResponseDto createIssue(@Valid IssueRegisterDto issueRegisterDto, MultipartFile imageFile, Authentication authentication) throws Exception {
-        String email = authentication.getName();
-        User citizen = userRepo.findUserByEmail(email);
-        if (citizen == null) {
-            throw new ResourceNotFoundException("Authenticated user not found.");
-        }
+        // Use JwtPrincipal userId to get a JPA reference proxy (no SELECT — just sets the FK)
+        JwtPrincipal principal = (JwtPrincipal) authentication.getPrincipal();
+        User citizen = userRepo.getReferenceById(principal.userId());
 
         Category category = categoryRepo.findById(issueRegisterDto.categoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + issueRegisterDto.categoryId()));

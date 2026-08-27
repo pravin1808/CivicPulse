@@ -1,8 +1,7 @@
 package com.civicpulse.civicpulse.controller;
 
-import com.civicpulse.civicpulse.model.User;
+import com.civicpulse.civicpulse.model.JwtPrincipal;
 import com.civicpulse.civicpulse.model.dto.*;
-import com.civicpulse.civicpulse.repository.jpa.UserRepo;
 import com.civicpulse.civicpulse.service.CitizenService;
 import com.civicpulse.civicpulse.service.ImageService;
 import com.civicpulse.civicpulse.service.IssueService;
@@ -27,9 +26,6 @@ public class CitizenController {
     @Autowired
     private CitizenService citizenService;
 
-    @Autowired
-    private UserRepo userRepo;
-
     @GetMapping("/hello")
     @CrossOrigin(origins = "http://localhost:5173")
     public String hello(){
@@ -46,7 +42,8 @@ public class CitizenController {
 
     @GetMapping("issues")
     public ResponseEntity<List<IssueDashboardResponseDto>> getAll(Authentication authentication){
-        return new ResponseEntity<>(citizenService.getAllIssues(authentication.getName()), HttpStatus.FOUND);
+        JwtPrincipal principal = (JwtPrincipal) authentication.getPrincipal();
+        return new ResponseEntity<>(citizenService.getAllIssues(principal.userId()), HttpStatus.FOUND);
     }
 
     @GetMapping("/issue/{issue_id}")

@@ -3,6 +3,7 @@ package com.civicpulse.civicpulse.controller;
 import com.civicpulse.civicpulse.exception.AccessForbiddenException;
 import com.civicpulse.civicpulse.exception.DuplicateResourceException;
 import com.civicpulse.civicpulse.model.Role;
+import com.civicpulse.civicpulse.model.UserDetailsImpl;
 import com.civicpulse.civicpulse.model.dto.*;
 import com.civicpulse.civicpulse.service.JwtService;
 import com.civicpulse.civicpulse.service.AuthService;
@@ -68,11 +69,17 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(loginRequestDto.email(), loginRequestDto.password())
             );
             if (authentication.isAuthenticated()) {
-                Role role = authService.whatRole(loginRequestDto.email());
-                if (role != Role.CITIZEN) {
+                UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+                String authority = userDetails.getAuthorities().iterator().next().getAuthority();
+                if (!authority.equals("ROLE_" + Role.CITIZEN.name())) {
                     throw new AccessForbiddenException("This login endpoint is for citizens only.");
                 }
-                String token = jwtService.generateToken(loginRequestDto.email(), "ROLE_" + role.name());
+                String token = jwtService.generateToken(
+                        userDetails.getUsername(),
+                        authority,
+                        userDetails.getUserId(),
+                        userDetails.getDepartmentId()
+                );
                 return ResponseEntity.ok(new AuthResponseDto(token));
             }
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed.");
@@ -92,11 +99,17 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(loginRequestDto.email(), loginRequestDto.password())
             );
             if (authentication.isAuthenticated()) {
-                Role role = authService.whatRole(loginRequestDto.email());
-                if (role != Role.ADMIN) {
+                UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+                String authority = userDetails.getAuthorities().iterator().next().getAuthority();
+                if (!authority.equals("ROLE_" + Role.ADMIN.name())) {
                     throw new AccessForbiddenException("This login endpoint is for admins only.");
                 }
-                String token = jwtService.generateToken(loginRequestDto.email(), "ROLE_" + role.name());
+                String token = jwtService.generateToken(
+                        userDetails.getUsername(),
+                        authority,
+                        userDetails.getUserId(),
+                        userDetails.getDepartmentId()
+                );
                 return ResponseEntity.ok(new AuthResponseDto(token));
             }
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed.");
@@ -116,11 +129,17 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(loginRequestDto.email(), loginRequestDto.password())
             );
             if (authentication.isAuthenticated()) {
-                Role role = authService.whatRole(loginRequestDto.email());
-                if (role != Role.WORKER) {
+                UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+                String authority = userDetails.getAuthorities().iterator().next().getAuthority();
+                if (!authority.equals("ROLE_" + Role.WORKER.name())) {
                     throw new AccessForbiddenException("This login endpoint is for workers only.");
                 }
-                String token = jwtService.generateToken(loginRequestDto.email(), "ROLE_" + role.name());
+                String token = jwtService.generateToken(
+                        userDetails.getUsername(),
+                        authority,
+                        userDetails.getUserId(),
+                        userDetails.getDepartmentId()
+                );
                 return ResponseEntity.ok(new AuthResponseDto(token));
             }
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed.");

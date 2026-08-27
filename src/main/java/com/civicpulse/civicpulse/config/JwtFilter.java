@@ -1,5 +1,6 @@
 package com.civicpulse.civicpulse.config;
 
+import com.civicpulse.civicpulse.model.JwtPrincipal;
 import com.civicpulse.civicpulse.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -38,6 +39,8 @@ public class JwtFilter extends OncePerRequestFilter {
             username = jwtService.extractUserName(jwtToken);
 
             String role = jwtService.extractClaim(jwtToken, claims -> claims.get("role", String.class));
+            Long userId = jwtService.extractClaim(jwtToken, claims -> claims.get("userId", Long.class));
+            Long departmentId = jwtService.extractClaim(jwtToken, claims -> claims.get("departmentId", Long.class));
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
@@ -45,8 +48,10 @@ public class JwtFilter extends OncePerRequestFilter {
 
                     var authorities = Collections.singletonList(new SimpleGrantedAuthority(role));
 
+                    JwtPrincipal principal = new JwtPrincipal(username, userId, departmentId);
+
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            username, null, authorities
+                            principal, null, authorities
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 

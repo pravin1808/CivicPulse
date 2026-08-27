@@ -4,11 +4,10 @@ import com.civicpulse.civicpulse.exception.AccessForbiddenException;
 import com.civicpulse.civicpulse.exception.ResourceNotFoundException;
 import com.civicpulse.civicpulse.model.Issue;
 import com.civicpulse.civicpulse.model.IssueStatus;
-import com.civicpulse.civicpulse.model.User;
+import com.civicpulse.civicpulse.model.JwtPrincipal;
 import com.civicpulse.civicpulse.model.dto.IssueUpdateWorkerDto;
 import com.civicpulse.civicpulse.model.dto.IssueWorkerResponseDto;
 import com.civicpulse.civicpulse.repository.jpa.IssueRepo;
-import com.civicpulse.civicpulse.repository.jpa.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -26,18 +25,13 @@ public class WorkerService {
     private ImageService imageService;
 
     @Autowired
-    private UserRepo userRepo;
-
-    @Autowired
     private IssueRepo issueRepo;
 
     public List<IssueWorkerResponseDto> getAllIssuesOfWorker(Authentication authentication) {
-        User worker = userRepo.findUserByEmail(authentication.getName());
-        if (worker == null) {
-            throw new ResourceNotFoundException("Authenticated worker not found.");
-        }
+        // Read worker identity from JwtPrincipal — no DB call needed
+        JwtPrincipal principal = (JwtPrincipal) authentication.getPrincipal();
 
-        List<Issue> allIssuesOfWorker = issueRepo.findAvailableIssuesForWorker(worker.getDepartmentId(), worker.getId());
+        List<Issue> allIssuesOfWorker = issueRepo.findAvailableIssuesForWorker(principal.departmentId(), principal.userId());
         List<IssueWorkerResponseDto> allIssues = new ArrayList<>();
 
         for (Issue issue : allIssuesOfWorker) {
@@ -60,12 +54,10 @@ public class WorkerService {
         Issue issue = Optional.ofNullable(issueRepo.findByIssueId(issueId))
                 .orElseThrow(() -> new ResourceNotFoundException("Issue not found with ID: " + issueId));
 
-        User worker = userRepo.findUserByEmail(authentication.getName());
-        if (worker == null) {
-            throw new ResourceNotFoundException("Authenticated worker not found.");
-        }
+        // Read worker identity from JwtPrincipal — no DB call needed
+        JwtPrincipal principal = (JwtPrincipal) authentication.getPrincipal();
 
-        if (!Objects.equals(issue.getWorker() != null ? issue.getWorker().getId() : null, worker.getId())) {
+        if (!Objects.equals(issue.getWorker() != null ? issue.getWorker().getId() : null, principal.userId())) {
             throw new AccessForbiddenException("You are not allowed to view this issue.");
         }
 
@@ -86,12 +78,10 @@ public class WorkerService {
         Issue issue = Optional.ofNullable(issueRepo.findByIssueId(issueId))
                 .orElseThrow(() -> new ResourceNotFoundException("Issue not found with ID: " + issueId));
 
-        User worker = userRepo.findUserByEmail(authentication.getName());
-        if (worker == null) {
-            throw new ResourceNotFoundException("Authenticated worker not found.");
-        }
+        // Read worker identity from JwtPrincipal — no DB call needed
+        JwtPrincipal principal = (JwtPrincipal) authentication.getPrincipal();
 
-        if (issue.getWorker() == null || !Objects.equals(issue.getWorker().getId(), worker.getId())) {
+        if (issue.getWorker() == null || !Objects.equals(issue.getWorker().getId(), principal.userId())) {
             throw new AccessForbiddenException("You are not allowed to update this issue.");
         }
 

@@ -117,6 +117,6 @@ public class AuthService {
         user.setOtp(null);
         user.setOtpExpTime(null);
         userRepo.save(user);
-        return jwtService.generateToken(user.getEmail(), "ROLE_" + user.getRole().name());
+        return jwtService.generateToken(user.getEmail(), "ROLE_" + user.getRole().name(), user.getId(), user.getDepartmentId());
     }
 }

@@ -4,6 +4,7 @@ import com.civicpulse.civicpulse.exception.AccessForbiddenException;
 import com.civicpulse.civicpulse.exception.ResourceNotFoundException;
 import com.civicpulse.civicpulse.model.Category;
 import com.civicpulse.civicpulse.model.Issue;
+import com.civicpulse.civicpulse.model.JwtPrincipal;
 import com.civicpulse.civicpulse.model.User;
 import com.civicpulse.civicpulse.model.dto.*;
 import com.civicpulse.civicpulse.repository.jpa.CategoryRepo;
@@ -35,13 +36,8 @@ public class CitizenService {
     @Autowired
     private CategoryRepo categoryRepo;
 
-    public List<IssueDashboardResponseDto> getAllIssues(String email) {
-        User citizen = userRepo.findUserByEmail(email);
-        if (citizen == null) {
-            throw new ResourceNotFoundException("User not found with email: " + email);
-        }
-
-        List<Issue> allIssues = issueRepo.findByCitizenId(citizen.getId());
+    public List<IssueDashboardResponseDto> getAllIssues(Long citizenId) {
+        List<Issue> allIssues = issueRepo.findByCitizenId(citizenId);
         List<IssueDashboardResponseDto> issueDashboardResponseDtos = new ArrayList<>();
 
         for (Issue issue : allIssues) {
@@ -91,12 +87,9 @@ public class CitizenService {
         Issue issue = Optional.ofNullable(issueRepo.findByIssueId(issueRequestDto.issue_id()))
                 .orElseThrow(() -> new ResourceNotFoundException("Issue not found with ID: " + issueRequestDto.issue_id()));
 
-        User citizen = userRepo.findUserByEmail(authentication.getName());
-        if (citizen == null) {
-            throw new ResourceNotFoundException("Authenticated user not found.");
-        }
-
-        if (!citizen.getId().equals(issue.getCitizen().getId())) {
+        // Read userId from JwtPrincipal — no DB call needed
+        JwtPrincipal principal = (JwtPrincipal) authentication.getPrincipal();
+        if (!principal.userId().equals(issue.getCitizen().getId())) {
             throw new AccessForbiddenException("You are not eligible to edit this issue.");
         }
 
