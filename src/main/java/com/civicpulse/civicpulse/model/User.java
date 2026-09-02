@@ -35,11 +35,18 @@ public class User {
     @Column(nullable = false, length = 20)
     private Role role;
 
-    @Column(length = 6)
+    // Password-reset OTPs are BCrypt hashes (about 60 characters), not plain 6-digit values.
+    @Column(length = 255)
     private String otp;
 
     @Column(name = "otp_expiry_time")
     private LocalDateTime otpExpTime;
+
+    @Column(name = "otp_requested_at")
+    private LocalDateTime otpRequestedAt;
+
+    @Column(name = "otp_attempt_count", nullable = false, columnDefinition = "integer default 0")
+    private int otpAttemptCount = 0;
 
     @Column(name = "dept_id")
     private Long departmentId;
@@ -56,6 +63,8 @@ public class User {
     public Role getRole() { return role; } public void setRole(Role role) { this.role = role; }
     public String getOtp() { return otp; } public void setOtp(String otp) { this.otp = otp; }
     public LocalDateTime getOtpExpTime() { return otpExpTime; } public void setOtpExpTime(LocalDateTime otpExpTime) { this.otpExpTime = otpExpTime; }
+    public LocalDateTime getOtpRequestedAt() { return otpRequestedAt; } public void setOtpRequestedAt(LocalDateTime otpRequestedAt) { this.otpRequestedAt = otpRequestedAt; }
+    public int getOtpAttemptCount() { return otpAttemptCount; } public void setOtpAttemptCount(int otpAttemptCount) { this.otpAttemptCount = otpAttemptCount; }
     public Long getDepartmentId() { return departmentId; } public void setDepartmentId(Long departmentId) { this.departmentId = departmentId; }
     public boolean isEnabled() { return enabled; } public void setEnabled(boolean enabled) { this.enabled = enabled; }
 

@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/api';
 import { extractErrorMessage } from '../../utils/errorHelper';
+import FieldErrors from '../../components/FieldErrors';
+import { clearFieldError, emailPattern, getBackendFieldErrors } from '../../utils/formValidation';
 import { ShieldAlert, User, ShieldCheck, HardHat, Mail, Lock, AlertCircle, ArrowLeft } from 'lucide-react';
 import './LoginPage.css';
 
@@ -10,6 +12,7 @@ const LoginPage = () => {
   const [role, setRole] = useState('citizen'); // citizen, worker, admin
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -19,6 +22,14 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    const validationErrors = {};
+    if (!email.trim()) validationErrors.email = ['Email is required.'];
+    else if (!emailPattern.test(email.trim())) validationErrors.email = ['Email must be a valid email address.'];
+    if (!password) validationErrors.password = ['Password is required.'];
+    setFieldErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+
     setLoading(true);
 
     let loginEndpoint = '';
@@ -27,7 +38,7 @@ const LoginPage = () => {
     else if (role === 'worker') loginEndpoint = '/api/auth/worker/login';
 
     try {
-      const response = await api.post(loginEndpoint, { email, password });
+      const response = await api.post(loginEndpoint, { email: email.trim(), password });
       const { token } = response.data;
       
       const loggedRole = login(token);
@@ -39,7 +50,14 @@ const LoginPage = () => {
       }
     } catch (err) {
       console.error(err);
-      setError(extractErrorMessage(err, 'Failed to connect to the server. Please verify your backend is running.'));
+      const backendFieldErrors = getBackendFieldErrors(err);
+      if (Object.keys(backendFieldErrors).length > 0) {
+        setFieldErrors(backendFieldErrors);
+      } else if (err?.response?.status === 401) {
+        setFieldErrors({ password: [extractErrorMessage(err, 'Invalid email or password.')] });
+      } else {
+        setError(extractErrorMessage(err, 'Failed to connect to the server. Please verify your backend is running.'));
+      }
     } finally {
       setLoading(false);
     }
@@ -66,7 +84,7 @@ const LoginPage = () => {
             <button 
               type="button" 
               className={`role-tab ${role === 'citizen' ? 'active' : ''}`}
-              onClick={() => { setRole('citizen'); setError(''); }}
+              onClick={() => { setRole('citizen'); setError(''); setFieldErrors({}); }}
             >
               <User size={16} />
               Citizen
@@ -74,7 +92,7 @@ const LoginPage = () => {
             <button 
               type="button" 
               className={`role-tab ${role === 'worker' ? 'active' : ''}`}
-              onClick={() => { setRole('worker'); setError(''); }}
+              onClick={() => { setRole('worker'); setError(''); setFieldErrors({}); }}
             >
               <HardHat size={16} />
               Worker
@@ -82,14 +100,14 @@ const LoginPage = () => {
             <button 
               type="button" 
               className={`role-tab ${role === 'admin' ? 'active' : ''}`}
-              onClick={() => { setRole('admin'); setError(''); }}
+              onClick={() => { setRole('admin'); setError(''); setFieldErrors({}); }}
             >
               <ShieldCheck size={16} />
               Admin
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="login-form">
+          <form onSubmit={handleSubmit} className="login-form" noValidate>
             <div className="form-group-title">
               <h3>{role.toUpperCase()} Portal</h3>
               <p>Please log in using your authorized email address</p>
@@ -111,10 +129,13 @@ const LoginPage = () => {
                   id="email"
                   placeholder="name@civicpulse.org"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); clearFieldError(setFieldErrors, 'email'); }}
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  aria-describedby={fieldErrors.email ? 'login-email-error' : undefined}
                   required
                 />
               </div>
+              <FieldErrors errors={fieldErrors.email} id="login-email-error" />
             </div>
 
             <div className="input-group">
@@ -129,10 +150,13 @@ const LoginPage = () => {
                   id="password"
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); clearFieldError(setFieldErrors, 'password'); }}
+                  aria-invalid={Boolean(fieldErrors.password)}
+                  aria-describedby={fieldErrors.password ? 'login-password-error' : undefined}
                   required
                 />
               </div>
+              <FieldErrors errors={fieldErrors.password} id="login-password-error" />
             </div>
 
             <button type="submit" className="btn btn-primary login-btn" disabled={loading}>

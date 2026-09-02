@@ -11,8 +11,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -26,11 +29,18 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDto> handleValidation(MethodArgumentNotValidException ex) {
-        String message = ex.getBindingResult().getFieldErrors()
+        List<FieldError> fieldErrors = ex.getBindingResult().getFieldErrors();
+        String message = fieldErrors
                 .stream()
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining(", "));
-        return build(HttpStatus.BAD_REQUEST, "Validation Failed", message);
+        Map<String, List<String>> errorsByField = fieldErrors.stream()
+                .collect(Collectors.groupingBy(
+                        FieldError::getField,
+                        java.util.LinkedHashMap::new,
+                        Collectors.mapping(FieldError::getDefaultMessage, Collectors.toList())
+                ));
+        return build(HttpStatus.BAD_REQUEST, "Validation Failed", message, errorsByField);
     }
 
     /**
@@ -74,7 +84,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponseDto> handleMaxUpload(MaxUploadSizeExceededException ex) {
         return build(HttpStatus.BAD_REQUEST, "File Too Large",
-                "Uploaded file exceeds the maximum allowed size.");
+                "The image must be 10 MB or smaller.",
+                Map.of("image", List.of("The image must be 10 MB or smaller.")));
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErrorResponseDto> handleMissingPart(MissingServletRequestPartException ex) {
+        String field = "image".equals(ex.getRequestPartName()) ? "image" : "status";
+        String message = "Required upload data is missing. Please select the image again and retry.";
+        return build(HttpStatus.BAD_REQUEST, "Missing Upload Data", message, Map.of(field, List.of(message)));
+    }
+
+    @ExceptionHandler(InvalidImageException.class)
+    public ResponseEntity<ErrorResponseDto> handleInvalidImage(InvalidImageException ex) {
+        return build(HttpStatus.BAD_REQUEST, "Invalid Image", ex.getMessage(), Map.of("image", List.of(ex.getMessage())));
+    }
+
+    @ExceptionHandler(ImageStorageException.class)
+    public ResponseEntity<ErrorResponseDto> handleImageStorage(ImageStorageException ex) {
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Image Storage Failed", ex.getMessage(), Map.of("image", List.of(ex.getMessage())));
     }
 
     // ── 403 Forbidden ────────────────────────────────────────────────────────
@@ -146,5 +174,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(status)
                 .body(new ErrorResponseDto(status.value(), error, message));
+    }
+
+    private ResponseEntity<ErrorResponseDto> build(
+            HttpStatus status,
+            String error,
+            String message,
+            Map<String, List<String>> fieldErrors
+    ) {
+        return ResponseEntity
+                .status(status)
+                .body(new ErrorResponseDto(status.value(), error, message, fieldErrors));
     }
 }

@@ -67,7 +67,8 @@ public class CitizenService {
         Issue issue = Optional.ofNullable(issueRepo.findByIssueId(issueId))
                 .orElseThrow(() -> new ResourceNotFoundException("Issue not found with ID: " + issueId));
 
-        if (!issue.getCitizen().getEmail().equals(authentication.getName())) {
+        JwtPrincipal principal = (JwtPrincipal) authentication.getPrincipal();
+        if (!principal.userId().equals(issue.getCitizen().getId())) {
             throw new AccessForbiddenException("You are not allowed to view another citizen's issue.");
         }
 
@@ -128,7 +129,8 @@ public class CitizenService {
         Issue issue = Optional.ofNullable(issueRepo.findByIssueId(issueId))
                 .orElseThrow(() -> new ResourceNotFoundException("Issue not found with ID: " + issueId));
 
-        if (!issue.getCitizen().getEmail().equals(authentication.getName())) {
+        JwtPrincipal principal = (JwtPrincipal) authentication.getPrincipal();
+        if (!principal.userId().equals(issue.getCitizen().getId())) {
             throw new AccessForbiddenException("You are not eligible to delete this issue.");
         }
         issueRepo.delete(issue);

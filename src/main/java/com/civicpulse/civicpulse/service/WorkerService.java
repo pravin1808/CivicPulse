@@ -1,6 +1,7 @@
 package com.civicpulse.civicpulse.service;
 
 import com.civicpulse.civicpulse.exception.AccessForbiddenException;
+import com.civicpulse.civicpulse.exception.InvalidImageException;
 import com.civicpulse.civicpulse.exception.ResourceNotFoundException;
 import com.civicpulse.civicpulse.model.Issue;
 import com.civicpulse.civicpulse.model.IssueStatus;
@@ -87,14 +88,10 @@ public class WorkerService {
 
         if (issueUpdateDto.status() == IssueStatus.RESOLVED) {
             if (imageFile == null || imageFile.isEmpty()) {
-                throw new IllegalArgumentException("An 'after' image is required to mark an issue as RESOLVED.");
+                throw new InvalidImageException("Upload a resolution image before marking the issue as resolved.");
             }
-            try {
-                String imageUrl = imageService.saveImage(issue.getCategory().getId(), issue.getIssueId(), imageFile, "After");
-                issue.setAfterImageURl(imageUrl);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to save the resolution image. Please try again.");
-            }
+            String imageUrl = imageService.saveImage(issue.getCategory().getId(), issue.getIssueId(), imageFile, "After");
+            issue.setAfterImageURl(imageUrl);
         }
 
         issue.setStatus(issueUpdateDto.status());

@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/api';
 import { extractErrorMessage } from '../../utils/errorHelper';
+import { clearFieldError, getBackendFieldErrors, validateIssue } from '../../utils/formValidation';
 import { DEPARTMENTS, getCategoriesByDept } from '../../api/categories';
+import FieldErrors from '../../components/FieldErrors';
 import Sidebar from '../../components/Sidebar';
 import TopBar from '../../components/TopBar';
 import { ArrowLeft, MapPin, Upload, AlertCircle, Sparkles } from 'lucide-react';
@@ -20,6 +22,7 @@ const ReportIssue = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [geoLoading, setGeoLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -27,6 +30,8 @@ const ReportIssue = () => {
   const handleDeptChange = (e) => {
     setDeptId(e.target.value);
     setCategoryId(''); // Reset category when department changes
+    clearFieldError(setFieldErrors, 'deptId');
+    clearFieldError(setFieldErrors, 'categoryId');
   };
 
   const handleImageChange = (e) => {
@@ -34,6 +39,7 @@ const ReportIssue = () => {
     if (file) {
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
+      clearFieldError(setFieldErrors, 'image');
     }
   };
 
@@ -47,6 +53,8 @@ const ReportIssue = () => {
       (position) => {
         setLatitude(position.coords.latitude.toFixed(6));
         setLongitude(position.coords.longitude.toFixed(6));
+        clearFieldError(setFieldErrors, 'latitude');
+        clearFieldError(setFieldErrors, 'longitude');
         setGeoLoading(false);
       },
       (err) => {
@@ -61,10 +69,9 @@ const ReportIssue = () => {
     e.preventDefault();
     setError('');
 
-    if (!imageFile) {
-      setError('An image file is required to report an issue.');
-      return;
-    }
+    const validationErrors = validateIssue({ title, description, deptId, categoryId, latitude, longitude, imageFile });
+    setFieldErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
 
     setLoading(true);
 
@@ -73,8 +80,8 @@ const ReportIssue = () => {
       formData.append('image', imageFile);
 
       const issueDetails = {
-        title,
-        description,
+        title: title.trim(),
+        description: description.trim(),
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
         categoryId: parseInt(categoryId)
@@ -96,7 +103,12 @@ const ReportIssue = () => {
       navigate('/citizen/dashboard');
     } catch (err) {
       console.error(err);
-      setError(extractErrorMessage(err, 'Failed to submit issue. Please verify all fields.'));
+      const backendFieldErrors = getBackendFieldErrors(err);
+      if (Object.keys(backendFieldErrors).length > 0) {
+        setFieldErrors(backendFieldErrors);
+      } else {
+        setError(extractErrorMessage(err, 'Failed to submit issue. Please try again.'));
+      }
     } finally {
       setLoading(false);
     }
@@ -122,7 +134,7 @@ const ReportIssue = () => {
               <h3>Report Municipal Grievance</h3>
             </div>
 
-            <form onSubmit={handleSubmit} className="report-form">
+            <form onSubmit={handleSubmit} className="report-form" noValidate>
               {error && (
                 <div className="error-alert">
                   <AlertCircle size={18} />
@@ -137,10 +149,13 @@ const ReportIssue = () => {
                   id="title"
                   placeholder="e.g. Broken streetlamp or large pothole in middle of lane"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => { setTitle(e.target.value); clearFieldError(setFieldErrors, 'title'); }}
                   maxLength={100}
+                  aria-invalid={Boolean(fieldErrors.title)}
+                  aria-describedby={fieldErrors.title ? 'issue-title-error' : undefined}
                   required
                 />
+                <FieldErrors errors={fieldErrors.title} id="issue-title-error" />
               </div>
 
               <div className="form-row">
@@ -150,6 +165,8 @@ const ReportIssue = () => {
                     id="department"
                     value={deptId}
                     onChange={handleDeptChange}
+                    aria-invalid={Boolean(fieldErrors.deptId)}
+                    aria-describedby={fieldErrors.deptId ? 'issue-department-error' : undefined}
                     required
                   >
                     <option value="">Select Department</option>
@@ -157,6 +174,7 @@ const ReportIssue = () => {
                       <option key={id} value={id}>{name}</option>
                     ))}
                   </select>
+                  <FieldErrors errors={fieldErrors.deptId} id="issue-department-error" />
                 </div>
 
                 <div className="input-group">
@@ -164,15 +182,18 @@ const ReportIssue = () => {
                   <select
                     id="category"
                     value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
+                    onChange={(e) => { setCategoryId(e.target.value); clearFieldError(setFieldErrors, 'categoryId'); }}
                     required
                     disabled={!deptId}
+                    aria-invalid={Boolean(fieldErrors.categoryId)}
+                    aria-describedby={fieldErrors.categoryId ? 'issue-category-error' : undefined}
                   >
                     <option value="">Select Category</option>
                     {deptId && getCategoriesByDept(deptId).map((cat) => (
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
+                  <FieldErrors errors={fieldErrors.categoryId} id="issue-category-error" />
                 </div>
               </div>
 
@@ -182,10 +203,13 @@ const ReportIssue = () => {
                   id="description"
                   placeholder="Please provide specifics such as landmark nearby, description of the problem, duration, or any other critical details that can help workers identify and fix the issue."
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => { setDescription(e.target.value); clearFieldError(setFieldErrors, 'description'); }}
                   rows={4}
+                  aria-invalid={Boolean(fieldErrors.description)}
+                  aria-describedby={fieldErrors.description ? 'issue-description-error' : undefined}
                   required
                 />
+                <FieldErrors errors={fieldErrors.description} id="issue-description-error" />
               </div>
 
               <div className="form-row geo-row">
@@ -197,9 +221,12 @@ const ReportIssue = () => {
                     id="latitude"
                     placeholder="e.g. 19.0760"
                     value={latitude}
-                    onChange={(e) => setLatitude(e.target.value)}
+                    onChange={(e) => { setLatitude(e.target.value); clearFieldError(setFieldErrors, 'latitude'); }}
+                    aria-invalid={Boolean(fieldErrors.latitude)}
+                    aria-describedby={fieldErrors.latitude ? 'issue-latitude-error' : undefined}
                     required
                   />
+                  <FieldErrors errors={fieldErrors.latitude} id="issue-latitude-error" />
                 </div>
 
                 <div className="input-group">
@@ -210,9 +237,12 @@ const ReportIssue = () => {
                     id="longitude"
                     placeholder="e.g. 72.8777"
                     value={longitude}
-                    onChange={(e) => setLongitude(e.target.value)}
+                    onChange={(e) => { setLongitude(e.target.value); clearFieldError(setFieldErrors, 'longitude'); }}
+                    aria-invalid={Boolean(fieldErrors.longitude)}
+                    aria-describedby={fieldErrors.longitude ? 'issue-longitude-error' : undefined}
                     required
                   />
+                  <FieldErrors errors={fieldErrors.longitude} id="issue-longitude-error" />
                 </div>
 
                 <div className="location-btn-wrapper">
@@ -238,6 +268,8 @@ const ReportIssue = () => {
                     accept="image/*"
                     onChange={handleImageChange}
                     className="hidden-file-input"
+                    aria-invalid={Boolean(fieldErrors.image)}
+                    aria-describedby={fieldErrors.image ? 'issue-image-error' : undefined}
                     required
                   />
                   <label htmlFor="image-upload" className="upload-label">
@@ -255,6 +287,7 @@ const ReportIssue = () => {
                     )}
                   </label>
                 </div>
+                <FieldErrors errors={fieldErrors.image} id="issue-image-error" />
               </div>
 
               <button type="submit" className="btn btn-primary submit-issue-btn" disabled={loading}>

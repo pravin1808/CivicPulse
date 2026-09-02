@@ -141,8 +141,8 @@ CivicPulse/
 | `POST` | `/citizen/login` | Public | Citizen login → returns JWT |
 | `POST` | `/admin/login` | Public | Admin login → returns JWT |
 | `POST` | `/worker/login` | Public | Worker login → returns JWT |
-| `POST` | `/forgot_password` | Public | Request password-reset OTP |
-| `POST` | `/verify_otp/login` | Public | Verify OTP → login without password |
+| `POST` | `/forgot_password` | Public | Request a password-reset OTP |
+| `POST` | `/forgot_password/reset` | Public | Verify OTP and set a new password |
 
 ### Citizen — `/api/citizen/` *(JWT required, CITIZEN role)*
 | Method | Endpoint | Description |

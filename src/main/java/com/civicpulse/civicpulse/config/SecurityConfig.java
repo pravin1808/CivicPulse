@@ -41,7 +41,7 @@ public class SecurityConfig {
                                 "/api/auth/admin/login",
                                 "/api/auth/worker/login",
                                 "/api/auth/forgot_password",
-                                "/api/auth/verify_otp/login",
+                                "/api/auth/forgot_password/reset",
                                 "/images/**").permitAll()
 
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

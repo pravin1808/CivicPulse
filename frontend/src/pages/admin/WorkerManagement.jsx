@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../api/api';
 import { extractErrorMessage } from '../../utils/errorHelper';
+import { clearFieldError, getBackendFieldErrors, validateWorker } from '../../utils/formValidation';
 import { DEPARTMENTS, getDepartmentName } from '../../api/categories';
+import FieldErrors from '../../components/FieldErrors';
 import Sidebar from '../../components/Sidebar';
 import TopBar from '../../components/TopBar';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -32,6 +34,7 @@ const WorkerManagement = () => {
 
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState('');
+  const [modalFieldErrors, setModalFieldErrors] = useState({});
 
   const fetchWorkers = async () => {
     try {
@@ -67,6 +70,7 @@ const WorkerManagement = () => {
     setPassword('');
     setDeptId('');
     setModalError('');
+    setModalFieldErrors({});
     setModalOpen(true);
   };
 
@@ -80,6 +84,7 @@ const WorkerManagement = () => {
     setPassword(''); // don't populate password
     setDeptId(worker.dept_Id || '');
     setModalError('');
+    setModalFieldErrors({});
     setModalOpen(true);
   };
 
@@ -102,24 +107,37 @@ const WorkerManagement = () => {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setModalError('');
+
+    const validationErrors = validateWorker({
+      name,
+      email,
+      phoneNumber,
+      address,
+      password,
+      deptId,
+      requireEmailAndPassword: modalType === 'add'
+    });
+    setModalFieldErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+
     setModalLoading(true);
 
     try {
       if (modalType === 'add') {
         const payload = {
-          name,
-          email,
-          phoneNumber,
-          address,
+          name: name.trim(),
+          email: email.trim(),
+          phoneNumber: phoneNumber.trim(),
+          address: address.trim(),
           password,
           dept_id: parseInt(deptId)
         };
         await api.post('/api/admin/worker_register', payload);
       } else {
         const payload = {
-          name,
-          phoneNumber,
-          address,
+          name: name.trim(),
+          phoneNumber: phoneNumber.trim(),
+          address: address.trim(),
           dept_id: parseInt(deptId)
         };
         await api.put(`/api/admin/worker/${selectedWorkerId}`, payload);
@@ -128,7 +146,14 @@ const WorkerManagement = () => {
       fetchWorkers();
     } catch (err) {
       console.error(err);
-      setModalError(extractErrorMessage(err, 'Operation failed. Verify password complexity requirements.'));
+      const backendFieldErrors = getBackendFieldErrors(err);
+      if (Object.keys(backendFieldErrors).length > 0) {
+        setModalFieldErrors(backendFieldErrors);
+      } else if (modalType === 'add' && err?.response?.status === 409) {
+        setModalFieldErrors({ email: [extractErrorMessage(err)] });
+      } else {
+        setModalError(extractErrorMessage(err, 'Operation failed. Please try again.'));
+      }
     } finally {
       setModalLoading(false);
     }
@@ -233,7 +258,7 @@ const WorkerManagement = () => {
               </button>
             </div>
 
-            <form onSubmit={handleFormSubmit} className="modal-form">
+            <form onSubmit={handleFormSubmit} className="modal-form" noValidate>
               {modalError && (
                 <div className="error-alert">
                   <ShieldAlert size={18} />
@@ -249,12 +274,15 @@ const WorkerManagement = () => {
                     type="text"
                     id="worker-name"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => { setName(e.target.value); clearFieldError(setModalFieldErrors, 'name'); }}
                     placeholder="e.g. Robert Smith"
+                    aria-invalid={Boolean(modalFieldErrors.name)}
+                    aria-describedby={modalFieldErrors.name ? 'worker-name-error' : undefined}
                     required
                     disabled={modalLoading}
                   />
                 </div>
+                <FieldErrors errors={modalFieldErrors.name} id="worker-name-error" />
               </div>
 
               {modalType === 'add' && (
@@ -266,12 +294,15 @@ const WorkerManagement = () => {
                       type="email"
                       id="worker-email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => { setEmail(e.target.value); clearFieldError(setModalFieldErrors, 'email'); }}
                       placeholder="robert@civicpulse.gov"
+                      aria-invalid={Boolean(modalFieldErrors.email)}
+                      aria-describedby={modalFieldErrors.email ? 'worker-email-error' : undefined}
                       required
                       disabled={modalLoading}
                     />
                   </div>
+                  <FieldErrors errors={modalFieldErrors.email} id="worker-email-error" />
                 </div>
               )}
 
@@ -283,12 +314,15 @@ const WorkerManagement = () => {
                     type="tel"
                     id="worker-phone"
                     value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    onChange={(e) => { setPhoneNumber(e.target.value); clearFieldError(setModalFieldErrors, 'phoneNumber'); }}
                     placeholder="+91 9898989898"
+                    aria-invalid={Boolean(modalFieldErrors.phoneNumber)}
+                    aria-describedby={modalFieldErrors.phoneNumber ? 'worker-phone-error' : undefined}
                     required
                     disabled={modalLoading}
                   />
                 </div>
+                <FieldErrors errors={modalFieldErrors.phoneNumber} id="worker-phone-error" />
               </div>
 
               <div className="input-group">
@@ -298,9 +332,11 @@ const WorkerManagement = () => {
                   <select
                     id="worker-dept"
                     value={deptId}
-                    onChange={(e) => setDeptId(e.target.value)}
+                    onChange={(e) => { setDeptId(e.target.value); clearFieldError(setModalFieldErrors, 'dept_id'); }}
                     required
                     disabled={modalLoading}
+                    aria-invalid={Boolean(modalFieldErrors.dept_id)}
+                    aria-describedby={modalFieldErrors.dept_id ? 'worker-dept-error' : undefined}
                   >
                     <option value="">Select Assignment Department</option>
                     {Object.entries(DEPARTMENTS).map(([id, deptName]) => (
@@ -308,6 +344,7 @@ const WorkerManagement = () => {
                     ))}
                   </select>
                 </div>
+                <FieldErrors errors={modalFieldErrors.dept_id} id="worker-dept-error" />
               </div>
 
               <div className="input-group">
@@ -317,13 +354,16 @@ const WorkerManagement = () => {
                   <textarea
                     id="worker-address"
                     value={address}
-                    onChange={(e) => setAddress(e.target.value)}
+                    onChange={(e) => { setAddress(e.target.value); clearFieldError(setModalFieldErrors, 'address'); }}
                     placeholder="Residential address"
                     rows={2}
+                    aria-invalid={Boolean(modalFieldErrors.address)}
+                    aria-describedby={modalFieldErrors.address ? 'worker-address-error' : undefined}
                     required
                     disabled={modalLoading}
                   />
                 </div>
+                <FieldErrors errors={modalFieldErrors.address} id="worker-address-error" />
               </div>
 
               {modalType === 'add' && (
@@ -335,12 +375,15 @@ const WorkerManagement = () => {
                       type="password"
                       id="worker-password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => { setPassword(e.target.value); clearFieldError(setModalFieldErrors, 'password'); }}
                       placeholder="Set strong password (e.g. Admin@123)"
+                      aria-invalid={Boolean(modalFieldErrors.password)}
+                      aria-describedby={modalFieldErrors.password ? 'worker-password-error' : undefined}
                       required
                       disabled={modalLoading}
                     />
                   </div>
+                  <FieldErrors errors={modalFieldErrors.password} id="worker-password-error" />
                   <span className="field-hint">
                     Requires 8-20 chars, 1 uppercase, 1 lowercase, 1 number, 1 special character (@#$%^&amp;+=!).
                   </span>

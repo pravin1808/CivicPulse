@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../api/api';
 import { extractErrorMessage } from '../../utils/errorHelper';
+import { clearFieldError, getBackendFieldErrors } from '../../utils/formValidation';
 import { getCategoryName, getDepartmentName } from '../../api/categories';
+import FieldErrors from '../../components/FieldErrors';
 import { getIssueImage, IMAGE_UNAVAILABLE } from '../../utils/imageHelper';
 import Sidebar from '../../components/Sidebar';
 import TopBar from '../../components/TopBar';
@@ -28,6 +30,7 @@ const AdminIssueDetail = () => {
   const [selectedStatus, setSelectedStatus] = useState('ASSIGNED');
   const [saveLoading, setSaveLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
+  const [assignFieldErrors, setAssignFieldErrors] = useState({});
 
   const fetchDetails = async () => {
     try {
@@ -69,7 +72,7 @@ const AdminIssueDetail = () => {
     setActionMessage('');
 
     if (!selectedWorkerId) {
-      setActionMessage('Select a department worker before assigning this issue.');
+      setAssignFieldErrors({ workerId: ['Select a department worker before assigning this issue.'] });
       return;
     }
 
@@ -87,7 +90,14 @@ const AdminIssueDetail = () => {
       fetchDetails(); // Refresh
     } catch (err) {
       console.error(err);
-      setActionMessage(extractErrorMessage(err, 'Failed to save changes. Please try again.'));
+      const backendFieldErrors = getBackendFieldErrors(err);
+      if (Object.keys(backendFieldErrors).length > 0) {
+        setAssignFieldErrors(backendFieldErrors);
+      } else if (err?.response?.status === 403 || err?.response?.status === 404) {
+        setAssignFieldErrors({ workerId: [extractErrorMessage(err)] });
+      } else {
+        setActionMessage(extractErrorMessage(err, 'Failed to save changes. Please try again.'));
+      }
     } finally {
       setSaveLoading(false);
     }
@@ -150,7 +160,7 @@ const AdminIssueDetail = () => {
               <ArrowLeft size={16} /> Back to List
             </Link>
             
-            <button className="btn btn-primary btn-sm" onClick={() => setAssigning(!assigning)}>
+            <button className="btn btn-primary btn-sm" onClick={() => { setAssigning(!assigning); setAssignFieldErrors({}); }}>
               <ClipboardCheck size={16} /> {assigning ? 'Cancel Operations' : 'Assign Worker / Update Status'}
             </button>
           </div>
@@ -167,15 +177,17 @@ const AdminIssueDetail = () => {
                 <ClipboardCheck size={20} className="header-icon" />
                 <h3>Assign Dispatch &amp; Update Status</h3>
               </div>
-              <form onSubmit={handleAssignSubmit} className="report-form">
+              <form onSubmit={handleAssignSubmit} className="report-form" noValidate>
                 <div className="form-row">
                   <div className="input-group">
                     <label htmlFor="worker-select">Select Dispatch Worker</label>
                     <select
                       id="worker-select"
                       value={selectedWorkerId}
-                      onChange={(e) => setSelectedWorkerId(e.target.value)}
+                      onChange={(e) => { setSelectedWorkerId(e.target.value); clearFieldError(setAssignFieldErrors, 'workerId'); }}
                       disabled={saveLoading}
+                      aria-invalid={Boolean(assignFieldErrors.workerId)}
+                      aria-describedby={assignFieldErrors.workerId ? 'detail-assign-worker-error' : undefined}
                     >
                       <option value="">Select a worker</option>
                       {workers.map((worker) => {
@@ -187,6 +199,7 @@ const AdminIssueDetail = () => {
                         );
                       })}
                     </select>
+                    <FieldErrors errors={assignFieldErrors.workerId} id="detail-assign-worker-error" />
                     {eligibleWorkers.length === 0 && (
                       <span className="field-hint warning-hint">
                         No registered worker belongs to this issue's department.
@@ -199,9 +212,11 @@ const AdminIssueDetail = () => {
                     <select
                       id="status-select"
                       value={selectedStatus}
-                      onChange={(e) => setSelectedStatus(e.target.value)}
+                      onChange={(e) => { setSelectedStatus(e.target.value); clearFieldError(setAssignFieldErrors, 'status'); }}
                       required
                       disabled={saveLoading}
+                      aria-invalid={Boolean(assignFieldErrors.status)}
+                      aria-describedby={assignFieldErrors.status ? 'detail-assign-status-error' : undefined}
                     >
                       <option value="PENDING">Pending</option>
                       <option value="ASSIGNED">Assigned</option>
@@ -209,6 +224,7 @@ const AdminIssueDetail = () => {
                       <option value="RESOLVED">Resolved</option>
                       <option value="REJECTED">Rejected</option>
                     </select>
+                    <FieldErrors errors={assignFieldErrors.status} id="detail-assign-status-error" />
                   </div>
                 </div>
 

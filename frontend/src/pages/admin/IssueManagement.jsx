@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/api';
 import { extractErrorMessage } from '../../utils/errorHelper';
+import { clearFieldError, getBackendFieldErrors } from '../../utils/formValidation';
 import { getCategoryName, getDepartmentName, DEPARTMENTS } from '../../api/categories';
+import FieldErrors from '../../components/FieldErrors';
 import Sidebar from '../../components/Sidebar';
 import TopBar from '../../components/TopBar';
 import StatusBadge from '../../components/StatusBadge';
@@ -28,6 +30,7 @@ const IssueManagement = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState('');
+  const [modalFieldErrors, setModalFieldErrors] = useState({});
 
   const navigate = useNavigate();
 
@@ -58,6 +61,7 @@ const IssueManagement = () => {
     setSelectedWorkerId('');
     setSelectedStatus(issue.status === 'PENDING' ? 'ASSIGNED' : issue.status);
     setModalError('');
+    setModalFieldErrors({});
     setModalOpen(true);
   };
 
@@ -71,7 +75,7 @@ const IssueManagement = () => {
     setModalError('');
 
     if (!selectedWorkerId) {
-      setModalError('Select a department worker before assigning this issue.');
+      setModalFieldErrors({ workerId: ['Select a department worker before assigning this issue.'] });
       return;
     }
 
@@ -88,7 +92,14 @@ const IssueManagement = () => {
       fetchData(); // refresh data
     } catch (err) {
       console.error(err);
-      setModalError(extractErrorMessage(err, 'Failed to update issue. Please try again.'));
+      const backendFieldErrors = getBackendFieldErrors(err);
+      if (Object.keys(backendFieldErrors).length > 0) {
+        setModalFieldErrors(backendFieldErrors);
+      } else if (err?.response?.status === 403 || err?.response?.status === 404) {
+        setModalFieldErrors({ workerId: [extractErrorMessage(err)] });
+      } else {
+        setModalError(extractErrorMessage(err, 'Failed to update issue. Please try again.'));
+      }
     } finally {
       setModalLoading(false);
     }
@@ -248,7 +259,7 @@ const IssueManagement = () => {
               </button>
             </div>
             
-            <form onSubmit={handleAssignSubmit} className="modal-form">
+            <form onSubmit={handleAssignSubmit} className="modal-form" noValidate>
               {modalError && (
                 <div className="error-alert">
                   <ShieldAlert size={18} />
@@ -272,7 +283,9 @@ const IssueManagement = () => {
                   <select
                     id="worker-select"
                     value={selectedWorkerId}
-                    onChange={(e) => setSelectedWorkerId(e.target.value)}
+                    onChange={(e) => { setSelectedWorkerId(e.target.value); clearFieldError(setModalFieldErrors, 'workerId'); }}
+                    aria-invalid={Boolean(modalFieldErrors.workerId)}
+                    aria-describedby={modalFieldErrors.workerId ? 'assign-worker-error' : undefined}
                   >
                     <option value="">Select a worker</option>
                     {workers.map((worker) => {
@@ -285,6 +298,7 @@ const IssueManagement = () => {
                     })}
                   </select>
                 </div>
+                <FieldErrors errors={modalFieldErrors.workerId} id="assign-worker-error" />
                 {eligibleWorkers.length === 0 && (
                   <span className="field-hint warning-hint">
                     No registered worker belongs to this issue's department. Workers from other departments are shown but cannot be assigned by the server.
@@ -297,8 +311,10 @@ const IssueManagement = () => {
                 <select
                   id="status-select"
                   value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  onChange={(e) => { setSelectedStatus(e.target.value); clearFieldError(setModalFieldErrors, 'status'); }}
                   required
+                  aria-invalid={Boolean(modalFieldErrors.status)}
+                  aria-describedby={modalFieldErrors.status ? 'assign-status-error' : undefined}
                 >
                   <option value="PENDING">Pending</option>
                   <option value="ASSIGNED">Assigned</option>
@@ -306,6 +322,7 @@ const IssueManagement = () => {
                   <option value="RESOLVED">Resolved</option>
                   <option value="REJECTED">Rejected</option>
                 </select>
+                <FieldErrors errors={modalFieldErrors.status} id="assign-status-error" />
               </div>
 
               <div className="modal-footer">

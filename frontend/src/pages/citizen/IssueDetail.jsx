@@ -3,11 +3,14 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../api/api';
 import { getCategoryName, getDepartmentName, DEPARTMENTS, getCategoriesByDept } from '../../api/categories';
 import { getIssueImage, IMAGE_UNAVAILABLE } from '../../utils/imageHelper';
+import { extractErrorMessage } from '../../utils/errorHelper';
+import { clearFieldError, getBackendFieldErrors, validateIssue } from '../../utils/formValidation';
 import Sidebar from '../../components/Sidebar';
+import FieldErrors from '../../components/FieldErrors';
 import TopBar from '../../components/TopBar';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { ArrowLeft, Edit3, Trash2, Calendar, MapPin, CheckCircle, Save, X, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Edit3, Trash2, Calendar, MapPin, CheckCircle, Save, X, Image as ImageIcon } from 'lucide-react';
 import './IssueDetail.css';
 
 const IssueDetail = () => {
@@ -28,6 +31,7 @@ const IssueDetail = () => {
   const [longitude, setLongitude] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [saveLoading, setSaveLoading] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
 
@@ -65,7 +69,7 @@ const IssueDetail = () => {
       }
     } catch (err) {
       console.error(err);
-      setError('Unable to load issue details. You may not be authorized to view this issue.');
+      setError(extractErrorMessage(err, 'Unable to load issue details. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -85,6 +89,8 @@ const IssueDetail = () => {
       (position) => {
         setLatitude(position.coords.latitude.toFixed(6));
         setLongitude(position.coords.longitude.toFixed(6));
+        clearFieldError(setFieldErrors, 'latitude');
+        clearFieldError(setFieldErrors, 'longitude');
         setGeoLoading(false);
       },
       (err) => {
@@ -107,6 +113,7 @@ const IssueDetail = () => {
     setIsEditing(false);
     setImageFile(null);
     setImagePreview(null);
+    setFieldErrors({});
     if (issue) {
       setTitle(issue.title);
       setDescription(issue.description);
@@ -116,6 +123,20 @@ const IssueDetail = () => {
   const handleUpdate = async (e) => {
     e.preventDefault();
     setError('');
+
+    const validationErrors = validateIssue({
+      title,
+      description,
+      deptId,
+      categoryId,
+      latitude,
+      longitude,
+      imageFile,
+      imageRequired: false
+    });
+    setFieldErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+
     setSaveLoading(true);
 
     try {
@@ -126,8 +147,8 @@ const IssueDetail = () => {
 
       const issueDetails = {
         issue_id: id,
-        title,
-        description,
+        title: title.trim(),
+        description: description.trim(),
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
         categoryId: parseInt(categoryId)
@@ -150,7 +171,12 @@ const IssueDetail = () => {
       fetchIssueDetails();
     } catch (err) {
       console.error(err);
-      setError('Failed to update issue. Please check all fields.');
+      const backendFieldErrors = getBackendFieldErrors(err);
+      if (Object.keys(backendFieldErrors).length > 0) {
+        setFieldErrors(backendFieldErrors);
+      } else {
+        setError(extractErrorMessage(err, 'Failed to update issue. Please try again.'));
+      }
     } finally {
       setSaveLoading(false);
     }
@@ -252,16 +278,19 @@ const IssueDetail = () => {
                 <h3>Modify Issue Details</h3>
               </div>
 
-              <form onSubmit={handleUpdate} className="report-form">
+              <form onSubmit={handleUpdate} className="report-form" noValidate>
                 <div className="input-group">
                   <label htmlFor="title">Title</label>
                   <input
                     type="text"
                     id="title"
                     value={title}
-                    onChange={(e) => setTitle(e.target.value)}
+                    onChange={(e) => { setTitle(e.target.value); clearFieldError(setFieldErrors, 'title'); }}
+                    aria-invalid={Boolean(fieldErrors.title)}
+                    aria-describedby={fieldErrors.title ? 'edit-title-error' : undefined}
                     required
                   />
+                  <FieldErrors errors={fieldErrors.title} id="edit-title-error" />
                 </div>
 
                 <div className="form-row">
@@ -270,7 +299,14 @@ const IssueDetail = () => {
                     <select
                       id="department"
                       value={deptId}
-                      onChange={(e) => { setDeptId(e.target.value); setCategoryId(''); }}
+                      onChange={(e) => {
+                        setDeptId(e.target.value);
+                        setCategoryId('');
+                        clearFieldError(setFieldErrors, 'deptId');
+                        clearFieldError(setFieldErrors, 'categoryId');
+                      }}
+                      aria-invalid={Boolean(fieldErrors.deptId)}
+                      aria-describedby={fieldErrors.deptId ? 'edit-department-error' : undefined}
                       required
                     >
                       <option value="">Select Department</option>
@@ -278,6 +314,7 @@ const IssueDetail = () => {
                         <option key={id} value={id}>{name}</option>
                       ))}
                     </select>
+                    <FieldErrors errors={fieldErrors.deptId} id="edit-department-error" />
                   </div>
 
                   <div className="input-group">
@@ -285,15 +322,18 @@ const IssueDetail = () => {
                     <select
                       id="category"
                       value={categoryId}
-                      onChange={(e) => setCategoryId(e.target.value)}
+                      onChange={(e) => { setCategoryId(e.target.value); clearFieldError(setFieldErrors, 'categoryId'); }}
                       required
                       disabled={!deptId}
+                      aria-invalid={Boolean(fieldErrors.categoryId)}
+                      aria-describedby={fieldErrors.categoryId ? 'edit-category-error' : undefined}
                     >
                       <option value="">Select Category</option>
                       {deptId && getCategoriesByDept(deptId).map((cat) => (
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                       ))}
                     </select>
+                    <FieldErrors errors={fieldErrors.categoryId} id="edit-category-error" />
                   </div>
                 </div>
 
@@ -302,10 +342,13 @@ const IssueDetail = () => {
                   <textarea
                     id="description"
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={(e) => { setDescription(e.target.value); clearFieldError(setFieldErrors, 'description'); }}
                     rows={4}
+                    aria-invalid={Boolean(fieldErrors.description)}
+                    aria-describedby={fieldErrors.description ? 'edit-description-error' : undefined}
                     required
                   />
+                  <FieldErrors errors={fieldErrors.description} id="edit-description-error" />
                 </div>
 
                 <div className="form-row geo-row">
@@ -316,9 +359,12 @@ const IssueDetail = () => {
                       step="0.000001"
                       id="latitude"
                       value={latitude}
-                      onChange={(e) => setLatitude(e.target.value)}
+                      onChange={(e) => { setLatitude(e.target.value); clearFieldError(setFieldErrors, 'latitude'); }}
+                      aria-invalid={Boolean(fieldErrors.latitude)}
+                      aria-describedby={fieldErrors.latitude ? 'edit-latitude-error' : undefined}
                       required
                     />
+                    <FieldErrors errors={fieldErrors.latitude} id="edit-latitude-error" />
                   </div>
 
                   <div className="input-group">
@@ -328,9 +374,12 @@ const IssueDetail = () => {
                       step="0.000001"
                       id="longitude"
                       value={longitude}
-                      onChange={(e) => setLongitude(e.target.value)}
+                      onChange={(e) => { setLongitude(e.target.value); clearFieldError(setFieldErrors, 'longitude'); }}
+                      aria-invalid={Boolean(fieldErrors.longitude)}
+                      aria-describedby={fieldErrors.longitude ? 'edit-longitude-error' : undefined}
                       required
                     />
+                    <FieldErrors errors={fieldErrors.longitude} id="edit-longitude-error" />
                   </div>
 
                   <div className="location-btn-wrapper">

@@ -2,8 +2,57 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/api';
 import { extractErrorMessage } from '../../utils/errorHelper';
+import FieldErrors from '../../components/FieldErrors';
+import { clearFieldError } from '../../utils/formValidation';
 import { ShieldAlert, User, Mail, Phone, MapPin, Lock, AlertCircle, ArrowLeft, Check } from 'lucide-react';
 import './RegisterPage.css';
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const getPasswordErrors = (value) => {
+  if (!value) {
+    return ['Password is required.'];
+  }
+
+  const errors = [];
+  if (value.length < 8 || value.length > 20) errors.push('Password must be between 8 and 20 characters.');
+  if (!/[A-Z]/.test(value)) errors.push('Password must include an uppercase letter.');
+  if (!/[a-z]/.test(value)) errors.push('Password must include a lowercase letter.');
+  if (!/[0-9]/.test(value)) errors.push('Password must include a digit.');
+  if (!/[@#$%^&+=!]/.test(value)) errors.push('Password must include a special character (@#$%^&+=!).');
+  return errors;
+};
+
+const validateRegistration = ({ name, email, phoneNumber, address, password, confirmPassword }) => {
+  const errors = {};
+  const addError = (field, message) => {
+    errors[field] = [...(errors[field] || []), message];
+  };
+
+  const trimmedName = name.trim();
+  if (!trimmedName) addError('name', 'Name is required.');
+  else if (trimmedName.length < 2 || trimmedName.length > 100) addError('name', 'Name must be between 2 and 100 characters.');
+
+  const trimmedPhoneNumber = phoneNumber.trim();
+  if (!trimmedPhoneNumber) addError('phoneNumber', 'Phone number is required.');
+  else if (!/^[6-9]\d{9}$/.test(trimmedPhoneNumber)) addError('phoneNumber', 'Phone number must be a valid 10-digit Indian mobile number.');
+
+  const trimmedEmail = email.trim();
+  if (!trimmedEmail) addError('email', 'Email is required.');
+  else if (!emailPattern.test(trimmedEmail)) addError('email', 'Email must be a valid email address.');
+
+  const trimmedAddress = address.trim();
+  if (!trimmedAddress) addError('address', 'Address is required.');
+  else if (trimmedAddress.length > 255) addError('address', 'Address must not exceed 255 characters.');
+
+  const passwordErrors = getPasswordErrors(password);
+  if (passwordErrors.length) errors.password = passwordErrors;
+
+  if (!confirmPassword) addError('confirmPassword', 'Please confirm your password.');
+  else if (password !== confirmPassword) addError('confirmPassword', 'Passwords do not match.');
+
+  return errors;
+};
 
 const RegisterPage = () => {
   const [name, setName] = useState('');
@@ -12,7 +61,8 @@ const RegisterPage = () => {
   const [address, setAddress] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [submissionError, setSubmissionError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -24,19 +74,14 @@ const RegisterPage = () => {
   const hasDigit = /[0-9]/.test(password);
   const hasSpecial = /[@#$%^&+=!]/.test(password);
   
-  const isPasswordValid = hasMinLen && hasUpper && hasLower && hasDigit && hasSpecial;
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setSubmissionError('');
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
+    const validationErrors = validateRegistration({ name, email, phoneNumber, address, password, confirmPassword });
+    setFieldErrors(validationErrors);
 
-    if (!isPasswordValid) {
-      setError('Please satisfy all password security requirements.');
+    if (Object.keys(validationErrors).length > 0) {
       return;
     }
 
@@ -44,10 +89,10 @@ const RegisterPage = () => {
 
     try {
       const response = await api.post('/api/auth/citizen/register', {
-        name,
-        email,
-        phoneNumber,
-        address,
+        name: name.trim(),
+        email: email.trim(),
+        phoneNumber: phoneNumber.trim(),
+        address: address.trim(),
         password
       });
       // The API returns the email in the body on success
@@ -55,7 +100,14 @@ const RegisterPage = () => {
       navigate(`/verify-otp?email=${encodeURIComponent(registeredEmail || email)}`);
     } catch (err) {
       console.error(err);
-      setError(extractErrorMessage(err, 'Failed to connect to the server. Please verify your backend is running.'));
+      const backendFieldErrors = err?.response?.data?.fieldErrors;
+      if (backendFieldErrors && typeof backendFieldErrors === 'object') {
+        setFieldErrors(backendFieldErrors);
+      } else if (err?.response?.status === 409) {
+        setFieldErrors({ email: [extractErrorMessage(err)] });
+      } else {
+        setSubmissionError(extractErrorMessage(err, 'Failed to connect to the server. Please verify your backend is running.'));
+      }
     } finally {
       setLoading(false);
     }
@@ -77,11 +129,11 @@ const RegisterPage = () => {
         </div>
 
         <div className="register-card glass-card">
-          <form onSubmit={handleSubmit} className="register-form">
-            {error && (
+          <form onSubmit={handleSubmit} className="register-form" noValidate>
+            {submissionError && (
               <div className="error-alert">
                 <AlertCircle size={18} />
-                <span>{error}</span>
+                <span>{submissionError}</span>
               </div>
             )}
 
@@ -95,10 +147,13 @@ const RegisterPage = () => {
                     id="name"
                     placeholder="John Doe"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => { setName(e.target.value); clearFieldError(setFieldErrors, 'name'); }}
+                    aria-invalid={Boolean(fieldErrors.name)}
+                    aria-describedby={fieldErrors.name ? 'name-error' : undefined}
                     required
                   />
                 </div>
+                <FieldErrors errors={fieldErrors.name} id="name-error" />
               </div>
 
               <div className="input-group">
@@ -110,10 +165,13 @@ const RegisterPage = () => {
                     id="phoneNumber"
                     placeholder="+91 9876543210"
                     value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    onChange={(e) => { setPhoneNumber(e.target.value); clearFieldError(setFieldErrors, 'phoneNumber'); }}
+                    aria-invalid={Boolean(fieldErrors.phoneNumber)}
+                    aria-describedby={fieldErrors.phoneNumber ? 'phoneNumber-error' : undefined}
                     required
                   />
                 </div>
+                <FieldErrors errors={fieldErrors.phoneNumber} id="phoneNumber-error" />
               </div>
             </div>
 
@@ -126,10 +184,13 @@ const RegisterPage = () => {
                   id="email"
                   placeholder="john@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); clearFieldError(setFieldErrors, 'email'); }}
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  aria-describedby={fieldErrors.email ? 'email-error' : undefined}
                   required
                 />
               </div>
+              <FieldErrors errors={fieldErrors.email} id="email-error" />
             </div>
 
             <div className="input-group">
@@ -140,11 +201,14 @@ const RegisterPage = () => {
                   id="address"
                   placeholder="Flat No, Street, Landmark, Area, City"
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={(e) => { setAddress(e.target.value); clearFieldError(setFieldErrors, 'address'); }}
                   rows={2}
+                  aria-invalid={Boolean(fieldErrors.address)}
+                  aria-describedby={fieldErrors.address ? 'address-error' : undefined}
                   required
                 />
               </div>
+              <FieldErrors errors={fieldErrors.address} id="address-error" />
             </div>
 
             <div className="form-row">
@@ -157,10 +221,13 @@ const RegisterPage = () => {
                     id="password"
                     placeholder="••••••••"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => { setPassword(e.target.value); clearFieldError(setFieldErrors, 'password'); }}
+                    aria-invalid={Boolean(fieldErrors.password)}
+                    aria-describedby={fieldErrors.password ? 'password-error' : undefined}
                     required
                   />
                 </div>
+                <FieldErrors errors={fieldErrors.password} id="password-error" />
               </div>
 
               <div className="input-group">
@@ -172,10 +239,13 @@ const RegisterPage = () => {
                     id="confirmPassword"
                     placeholder="••••••••"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e) => { setConfirmPassword(e.target.value); clearFieldError(setFieldErrors, 'confirmPassword'); }}
+                    aria-invalid={Boolean(fieldErrors.confirmPassword)}
+                    aria-describedby={fieldErrors.confirmPassword ? 'confirmPassword-error' : undefined}
                     required
                   />
                 </div>
+                <FieldErrors errors={fieldErrors.confirmPassword} id="confirmPassword-error" />
               </div>
             </div>
 
@@ -204,7 +274,7 @@ const RegisterPage = () => {
             <button 
               type="submit" 
               className="btn btn-primary register-btn" 
-              disabled={loading || !isPasswordValid || password !== confirmPassword}
+              disabled={loading}
             >
               {loading ? 'Creating Account...' : 'Register Account'}
             </button>

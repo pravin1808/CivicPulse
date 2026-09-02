@@ -154,17 +154,15 @@ public class AuthController {
 
     @PostMapping("/forgot_password")
     public ResponseEntity<?> forgotPasswordGenerateOtp(@Valid @RequestBody EmailDto emailDto) {
-        if (authService.checkIfUserExist(emailDto.email())) {
-            authService.forgotPasswordOtpRequest(emailDto.email());
-            return new ResponseEntity<>(emailDto, HttpStatus.ACCEPTED);
-        }
-        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        authService.forgotPasswordOtpRequest(emailDto.email());
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body("A password-reset OTP has been sent to your email address.");
     }
 
-    @PostMapping("verify_otp/login")
-    public ResponseEntity<?> verifyOtpAndLogin(@Valid @RequestBody OtpRequestDto otpRequestDto) {
-        String token = authService.verifyOtpAndLogin(otpRequestDto);
-        return ResponseEntity.ok(new AuthResponseDto(token));
+    @PostMapping("/forgot_password/reset")
+    public ResponseEntity<?> resetForgotPassword(@Valid @RequestBody PasswordResetRequestDto passwordResetRequestDto) {
+        authService.resetPassword(passwordResetRequestDto);
+        return ResponseEntity.ok("Password reset successfully. Please sign in with your new password.");
     }
 
 

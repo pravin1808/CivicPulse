@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/api';
-import { ShieldAlert, Mail, AlertCircle, ArrowLeft, Send } from 'lucide-react';
+import { extractErrorMessage } from '../../utils/errorHelper';
+import FieldErrors from '../../components/FieldErrors';
+import { clearFieldError, emailPattern, getBackendFieldErrors } from '../../utils/formValidation';
+import { Mail, AlertCircle, ArrowLeft, Send } from 'lucide-react';
 import './ForgotPasswordPage.css';
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -14,27 +18,28 @@ const ForgotPasswordPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    const validationErrors = {};
+    if (!email.trim()) validationErrors.email = ['Email is required.'];
+    else if (!emailPattern.test(email.trim())) validationErrors.email = ['Email must be a valid email address.'];
+    setFieldErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+
     setLoading(true);
 
     try {
-      // Use form-url-encoded format as required by the backend controller (no @RequestBody)
-      const params = new URLSearchParams();
-      params.append('email', email);
+      await api.post('/api/auth/forgot_password', { email: email.trim() });
 
-      await api.post('/api/auth/forgot_password', params, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      });
-
-      // Redirect to OTP verification for login
-      navigate(`/verify-otp?email=${encodeURIComponent(email)}&type=login`);
+      navigate(`/verify-otp?email=${encodeURIComponent(email.trim())}&type=reset`);
     } catch (err) {
       console.error(err);
-      if (err.response && err.response.status === 400) {
-        setError('This email address is not registered in our system.');
+      const backendFieldErrors = getBackendFieldErrors(err);
+      if (Object.keys(backendFieldErrors).length > 0) {
+        setFieldErrors(backendFieldErrors);
+      } else if (err?.response?.status === 404 || err?.response?.status === 429) {
+        setFieldErrors({ email: [extractErrorMessage(err)] });
       } else {
-        setError('Failed to request password reset OTP. Please try again.');
+        setError(extractErrorMessage(err, 'Failed to request a password-reset OTP. Please try again.'));
       }
     } finally {
       setLoading(false);
@@ -53,11 +58,11 @@ const ForgotPasswordPage = () => {
             <Mail size={28} color="#fff" />
           </div>
           <h2>Reset Password</h2>
-          <p>Enter your email and we'll send you a verification code to bypass credentials.</p>
+          <p>Enter your email and we'll send you a verification code to reset your password.</p>
         </div>
 
         <div className="forgot-card glass-card">
-          <form onSubmit={handleSubmit} className="forgot-form">
+          <form onSubmit={handleSubmit} className="forgot-form" noValidate>
             {error && (
               <div className="error-alert">
                 <AlertCircle size={18} />
@@ -74,11 +79,14 @@ const ForgotPasswordPage = () => {
                   id="email"
                   placeholder="name@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); clearFieldError(setFieldErrors, 'email'); }}
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  aria-describedby={fieldErrors.email ? 'forgot-email-error' : undefined}
                   required
                   disabled={loading}
                 />
               </div>
+              <FieldErrors errors={fieldErrors.email} id="forgot-email-error" />
             </div>
 
             <button type="submit" className="btn btn-primary forgot-btn" disabled={loading || !email}>

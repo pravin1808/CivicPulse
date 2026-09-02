@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../api/api';
+import { extractErrorMessage } from '../../utils/errorHelper';
 import { getCategoryName } from '../../api/categories';
 import { getIssueImage, IMAGE_UNAVAILABLE } from '../../utils/imageHelper';
+import { clearFieldError, getBackendFieldErrors } from '../../utils/formValidation';
 import Sidebar from '../../components/Sidebar';
+import FieldErrors from '../../components/FieldErrors';
 import TopBar from '../../components/TopBar';
 import StatusBadge from '../../components/StatusBadge';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -11,6 +14,7 @@ import { ArrowLeft, Save, Upload, AlertTriangle, ShieldCheck, MapPin, ClipboardL
 import './WorkerIssueDetail.css';
 
 const WorkerIssueDetail = () => {
+  const maxImageSizeBytes = 10 * 1024 * 1024;
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -24,6 +28,7 @@ const WorkerIssueDetail = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [saveLoading, setSaveLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const fetchDetailsFromDashboardList = async () => {
     try {
@@ -55,22 +60,40 @@ const WorkerIssueDetail = () => {
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setImageFile(null);
+      setImagePreview(null);
+      e.target.value = '';
+      setFieldErrors((currentErrors) => ({ ...currentErrors, image: ['Choose a JPG, PNG, or other image file.'] }));
+      return;
     }
+
+    if (file.size > maxImageSizeBytes) {
+      setImageFile(null);
+      setImagePreview(null);
+      e.target.value = '';
+      setFieldErrors((currentErrors) => ({ ...currentErrors, image: ['The resolution image must be 10 MB or smaller.'] }));
+      return;
+    }
+
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    clearFieldError(setFieldErrors, 'image');
   };
 
   const handleSubmitStatus = async (e) => {
     e.preventDefault();
     setActionMessage('');
-    setSaveLoading(true);
 
-    if (status === 'RESOLVED' && !imageFile) {
-      setActionMessage('An after resolution image is required to mark the issue as resolved.');
-      setSaveLoading(false);
-      return;
-    }
+    const validationErrors = {};
+    if (!status) validationErrors.status = ['Select an issue status.'];
+    if (status === 'RESOLVED' && !imageFile) validationErrors.image = ['Upload a resolution image before marking the issue as resolved.'];
+    setFieldErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+
+    setSaveLoading(true);
 
     try {
       const formData = new FormData();
@@ -84,18 +107,21 @@ const WorkerIssueDetail = () => {
       });
       formData.append('issue_status', statusBlob);
 
-      await api.patch(`/api/worker/issue/${id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      // The browser supplies the multipart boundary when no Content-Type is forced.
+      await api.patch(`/api/worker/issue/${id}`, formData);
 
       setActionMessage('Status updated successfully!');
       fetchDetailsFromDashboardList();
     } catch (err) {
       console.error(err);
-      // Give a helpful descriptive message due to the backend bug
-      setActionMessage('Failed to update status. Note: The backend contains a validation constraint matching citizen IDs with worker IDs, causing a permission mismatch.');
+      const backendFieldErrors = getBackendFieldErrors(err);
+      if (Object.keys(backendFieldErrors).length > 0) {
+        setFieldErrors(backendFieldErrors);
+      } else if (status === 'RESOLVED' && err?.response?.status) {
+        setFieldErrors({ image: [extractErrorMessage(err, 'The resolution image could not be uploaded. Please try another image.')] });
+      } else {
+        setActionMessage(extractErrorMessage(err, 'Failed to update status. Please try again.'));
+      }
     } finally {
       setSaveLoading(false);
     }
@@ -193,15 +219,17 @@ const WorkerIssueDetail = () => {
               {/* Status Update Panel */}
               <div className="update-status-card glass-card">
                 <h3>Update Grievance Status</h3>
-                <form onSubmit={handleSubmitStatus} className="status-update-form">
+                <form onSubmit={handleSubmitStatus} className="status-update-form" noValidate>
                   <div className="input-group">
                     <label htmlFor="status-select">Select New Status</label>
                     <select
                       id="status-select"
                       value={status}
-                      onChange={(e) => setStatus(e.target.value)}
+                      onChange={(e) => { setStatus(e.target.value); clearFieldError(setFieldErrors, 'status'); }}
                       required
                       disabled={saveLoading}
+                      aria-invalid={Boolean(fieldErrors.status)}
+                      aria-describedby={fieldErrors.status ? 'worker-status-error' : undefined}
                     >
                       <option value="PENDING">Pending</option>
                       <option value="ASSIGNED">Assigned</option>
@@ -209,6 +237,7 @@ const WorkerIssueDetail = () => {
                       <option value="RESOLVED">Resolved</option>
                       <option value="REJECTED">Rejected</option>
                     </select>
+                    <FieldErrors errors={fieldErrors.status} id="worker-status-error" />
                   </div>
 
                   {status === 'RESOLVED' && (
@@ -221,6 +250,8 @@ const WorkerIssueDetail = () => {
                           accept="image/*"
                           onChange={handleImageChange}
                           className="hidden-file-input"
+                          aria-invalid={Boolean(fieldErrors.image)}
+                          aria-describedby={fieldErrors.image ? 'resolution-image-error' : undefined}
                           required
                         />
                         <label htmlFor="resolution-upload" className="upload-label">
@@ -238,6 +269,7 @@ const WorkerIssueDetail = () => {
                           )}
                         </label>
                       </div>
+                      <FieldErrors errors={fieldErrors.image} id="resolution-image-error" />
                     </div>
                   )}
 

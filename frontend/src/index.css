@@ -77,6 +77,32 @@ button, input, select, textarea {
   outline: none;
 }
 
+.field-errors {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--color-rejected);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.field-errors ul {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.input-group input[aria-invalid='true'],
+.input-group select[aria-invalid='true'],
+.input-group textarea[aria-invalid='true'] {
+  border-color: var(--color-rejected) !important;
+}
+
+.input-group input[aria-invalid='true']:focus,
+.input-group select[aria-invalid='true']:focus,
+.input-group textarea[aria-invalid='true']:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

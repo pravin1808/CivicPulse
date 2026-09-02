@@ -8,11 +8,14 @@ import com.civicpulse.civicpulse.model.User;
 import com.civicpulse.civicpulse.model.cache.TemporaryUser;
 import com.civicpulse.civicpulse.model.dto.CitizenRegisterRequestDto;
 import com.civicpulse.civicpulse.model.dto.OtpRequestDto;
+import com.civicpulse.civicpulse.model.dto.PasswordResetRequestDto;
 import com.civicpulse.civicpulse.repository.redis.TemporaryUserRepo;
 import com.civicpulse.civicpulse.repository.jpa.UserRepo;
+import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -21,11 +24,12 @@ import java.util.Optional;
 @Service
 public class AuthService {
 
-    @Autowired
-    private EmailService emailService;
+    private static final int PASSWORD_RESET_OTP_EXPIRY_MINUTES = 5;
+    private static final int PASSWORD_RESET_RESEND_COOLDOWN_SECONDS = 60;
+    private static final int MAX_PASSWORD_RESET_OTP_ATTEMPTS = 5;
 
     @Autowired
-    private JwtService jwtService;
+    private EmailService emailService;
 
     @Autowired
     private TemporaryUserRepo tempUserRepo;
@@ -88,35 +92,64 @@ public class AuthService {
     }
 
     public void forgotPasswordOtpRequest(String email) {
-        SecureRandom random = new SecureRandom();
-        String otp = String.valueOf(100000 + random.nextInt(900000));
-        emailService.sendOtpMail(email, otp);
         User user = userRepo.findUserByEmail(email);
         if (user == null) {
-            throw new ResourceNotFoundException("User not found with email: " + email);
+            throw new ResourceNotFoundException("No account is registered with this email address.");
         }
-        user.setOtp(otp);
-        user.setOtpExpTime(LocalDateTime.now().plusMinutes(5));
+
+        LocalDateTime now = LocalDateTime.now();
+        if (user.getOtpRequestedAt() != null
+                && now.isBefore(user.getOtpRequestedAt().plusSeconds(PASSWORD_RESET_RESEND_COOLDOWN_SECONDS))) {
+            throw new ResponseStatusException(
+                    HttpStatus.TOO_MANY_REQUESTS,
+                    "Please wait one minute before requesting another OTP."
+            );
+        }
+
+        SecureRandom random = new SecureRandom();
+        String otp = String.valueOf(100000 + random.nextInt(900000));
+        user.setOtp(bCryptPasswordEncoder.encode(otp));
+        user.setOtpRequestedAt(now);
+        user.setOtpExpTime(now.plusMinutes(PASSWORD_RESET_OTP_EXPIRY_MINUTES));
+        user.setOtpAttemptCount(0);
+        userRepo.save(user);
+        emailService.sendPasswordResetOtpMail(email, otp);
+    }
+
+    public void resetPassword(PasswordResetRequestDto passwordResetRequestDto) {
+        User user = userRepo.findUserByEmail(passwordResetRequestDto.email());
+        if (user == null) {
+            throw new ResourceNotFoundException("No account is registered with this email address.");
+        }
+        if (user.getOtp() == null || user.getOtpExpTime() == null) {
+            throw new InvalidOtpException("No active password-reset OTP was requested for this account.");
+        }
+        if (LocalDateTime.now().isAfter(user.getOtpExpTime())) {
+            clearPasswordResetOtp(user);
+            userRepo.save(user);
+            throw new OtpExpiredException("This OTP has expired. Please request a new one.");
+        }
+        if (!bCryptPasswordEncoder.matches(passwordResetRequestDto.otp(), user.getOtp())) {
+            int attempts = user.getOtpAttemptCount() + 1;
+            user.setOtpAttemptCount(attempts);
+            if (attempts >= MAX_PASSWORD_RESET_OTP_ATTEMPTS) {
+                clearPasswordResetOtp(user);
+                userRepo.save(user);
+                throw new InvalidOtpException("Too many invalid OTP attempts. Please request a new OTP.");
+            }
+            userRepo.save(user);
+            throw new InvalidOtpException("Invalid OTP. Please check and try again.");
+        }
+
+        user.setPassword(bCryptPasswordEncoder.encode(passwordResetRequestDto.newPassword()));
+        clearPasswordResetOtp(user);
         userRepo.save(user);
     }
 
-    public String verifyOtpAndLogin(OtpRequestDto otpRequestDto) {
-        User user = userRepo.findUserByEmail(otpRequestDto.email());
-        if (user == null) {
-            throw new ResourceNotFoundException("User not found with email: " + otpRequestDto.email());
-        }
-        if (user.getOtp() == null || user.getOtpExpTime() == null) {
-            throw new InvalidOtpException("No OTP was requested for this account.");
-        }
-        if (LocalDateTime.now().isAfter(user.getOtpExpTime())) {
-            throw new OtpExpiredException("OTP has expired. Please request a new one.");
-        }
-        if (!user.getOtp().equals(otpRequestDto.otp())) {
-            throw new InvalidOtpException("Invalid OTP. Please check and try again.");
-        }
+    private void clearPasswordResetOtp(User user) {
         user.setOtp(null);
         user.setOtpExpTime(null);
-        userRepo.save(user);
-        return jwtService.generateToken(user.getEmail(), "ROLE_" + user.getRole().name(), user.getId(), user.getDepartmentId());
+        user.setOtpRequestedAt(null);
+        user.setOtpAttemptCount(0);
     }
 }

@@ -21,12 +21,31 @@ public class EmailService {
 
     @Async
     public void sendOtpMail(String targetEmail, String otpCode) {
+        sendOtpEmail(
+                targetEmail,
+                otpCode,
+                "CivicPulse - Account Verification OTP",
+                "<h3>Welcome to CivicPulse!</h3>"
+        );
+    }
+
+    @Async
+    public void sendPasswordResetOtpMail(String targetEmail, String otpCode) {
+        sendOtpEmail(
+                targetEmail,
+                otpCode,
+                "CivicPulse - Password Reset OTP",
+                "<h3>Reset your CivicPulse password</h3>"
+        );
+    }
+
+    private void sendOtpEmail(String targetEmail, String otpCode, String subject, String heading) {
 
         Map<String, Object> requestBody = Map.of(
                 "sender", Map.of("name", "CivicPulse", "email", "pravinm1808@gmail.com"),
                 "to", List.of(Map.of("email", targetEmail)),
-                "subject", "CivicPulse - Account Verification OTP",
-                "htmlContent", "<h3>Welcome to CivicPulse!</h3>" +
+                "subject", subject,
+                "htmlContent", heading +
                         "<p>Your 6-digit verification code is: <b>" + otpCode + "</b></p>" +
                         "<p>This code expires in 5 minutes.</p>"
         );
