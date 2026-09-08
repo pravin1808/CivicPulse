@@ -5,6 +5,7 @@ import { extractErrorMessage } from '../../utils/errorHelper';
 import { clearFieldError, getBackendFieldErrors, validateWorker } from '../../utils/formValidation';
 import { DEPARTMENTS, getDepartmentName } from '../../api/categories';
 import FieldErrors from '../../components/FieldErrors';
+import PasswordInput from '../../components/PasswordInput';
 import Sidebar from '../../components/Sidebar';
 import TopBar from '../../components/TopBar';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -369,20 +370,17 @@ const WorkerManagement = () => {
               {modalType === 'add' && (
                 <div className="input-group">
                   <label htmlFor="worker-password">Account Password</label>
-                  <div className="input-field-wrapper">
-                    <Key size={18} className="input-icon" />
-                    <input
-                      type="password"
-                      id="worker-password"
-                      value={password}
-                      onChange={(e) => { setPassword(e.target.value); clearFieldError(setModalFieldErrors, 'password'); }}
-                      placeholder="Set strong password (e.g. Admin@123)"
-                      aria-invalid={Boolean(modalFieldErrors.password)}
-                      aria-describedby={modalFieldErrors.password ? 'worker-password-error' : undefined}
-                      required
-                      disabled={modalLoading}
-                    />
-                  </div>
+                  <PasswordInput
+                    icon={Key}
+                    id="worker-password"
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); clearFieldError(setModalFieldErrors, 'password'); }}
+                    placeholder="Set strong password (e.g. Admin@123)"
+                    aria-invalid={Boolean(modalFieldErrors.password)}
+                    aria-describedby={modalFieldErrors.password ? 'worker-password-error' : undefined}
+                    required
+                    disabled={modalLoading}
+                  />
                   <FieldErrors errors={modalFieldErrors.password} id="worker-password-error" />
                   <span className="field-hint">
                     Requires 8-20 chars, 1 uppercase, 1 lowercase, 1 number, 1 special character (@#$%^&amp;+=!).

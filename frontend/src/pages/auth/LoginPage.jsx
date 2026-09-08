@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../api/api';
 import { extractErrorMessage } from '../../utils/errorHelper';
 import FieldErrors from '../../components/FieldErrors';
+import PasswordInput from '../../components/PasswordInput';
 import { clearFieldError, emailPattern, getBackendFieldErrors } from '../../utils/formValidation';
 import { ShieldAlert, User, ShieldCheck, HardHat, Mail, Lock, AlertCircle, ArrowLeft } from 'lucide-react';
 import './LoginPage.css';
@@ -143,19 +144,17 @@ const LoginPage = () => {
                 <label htmlFor="password">Password</label>
                 <Link to="/forgot-password" className="forgot-link">Forgot?</Link>
               </div>
-              <div className="input-field-wrapper">
-                <Lock size={18} className="input-icon" />
-                <input
-                  type="password"
-                  id="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); clearFieldError(setFieldErrors, 'password'); }}
-                  aria-invalid={Boolean(fieldErrors.password)}
-                  aria-describedby={fieldErrors.password ? 'login-password-error' : undefined}
-                  required
-                />
-              </div>
+              <PasswordInput
+                icon={Lock}
+                id="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); clearFieldError(setFieldErrors, 'password'); }}
+                aria-invalid={Boolean(fieldErrors.password)}
+                aria-describedby={fieldErrors.password ? 'login-password-error' : undefined}
+                required
+                disabled={loading}
+              />
               <FieldErrors errors={fieldErrors.password} id="login-password-error" />
             </div>
 

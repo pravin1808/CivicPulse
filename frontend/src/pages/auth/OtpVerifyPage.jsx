@@ -4,6 +4,7 @@ import api from '../../api/api';
 import { extractErrorMessage } from '../../utils/errorHelper';
 import { KeyRound, AlertCircle, ArrowLeft, CheckCircle2, Lock } from 'lucide-react';
 import FieldErrors from '../../components/FieldErrors';
+import PasswordInput from '../../components/PasswordInput';
 import { clearFieldError, getBackendFieldErrors } from '../../utils/formValidation';
 import './OtpVerifyPage.css';
 
@@ -139,39 +140,33 @@ const OtpVerifyPage = () => {
               <>
                 <div className="input-group">
                   <label htmlFor="newPassword">New Password</label>
-                  <div className="input-field-wrapper">
-                    <Lock size={18} className="input-icon" />
-                    <input
-                      type="password"
-                      id="newPassword"
-                      placeholder="••••••••"
-                      value={newPassword}
-                      onChange={(e) => { setNewPassword(e.target.value); clearFieldError(setFieldErrors, 'newPassword'); }}
-                      aria-invalid={Boolean(fieldErrors.newPassword)}
-                      aria-describedby={fieldErrors.newPassword ? 'new-password-error' : undefined}
-                      required
-                      disabled={loading || !!success}
-                    />
-                  </div>
+                  <PasswordInput
+                    icon={Lock}
+                    id="newPassword"
+                    placeholder="••••••••"
+                    value={newPassword}
+                    onChange={(e) => { setNewPassword(e.target.value); clearFieldError(setFieldErrors, 'newPassword'); }}
+                    aria-invalid={Boolean(fieldErrors.newPassword)}
+                    aria-describedby={fieldErrors.newPassword ? 'new-password-error' : undefined}
+                    required
+                    disabled={loading || !!success}
+                  />
                   <FieldErrors errors={fieldErrors.newPassword} id="new-password-error" />
                 </div>
 
                 <div className="input-group">
                   <label htmlFor="confirmPassword">Confirm New Password</label>
-                  <div className="input-field-wrapper">
-                    <Lock size={18} className="input-icon" />
-                    <input
-                      type="password"
-                      id="confirmPassword"
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => { setConfirmPassword(e.target.value); clearFieldError(setFieldErrors, 'confirmPassword'); }}
-                      aria-invalid={Boolean(fieldErrors.confirmPassword)}
-                      aria-describedby={fieldErrors.confirmPassword ? 'confirm-password-error' : undefined}
-                      required
-                      disabled={loading || !!success}
-                    />
-                  </div>
+                  <PasswordInput
+                    icon={Lock}
+                    id="confirmPassword"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => { setConfirmPassword(e.target.value); clearFieldError(setFieldErrors, 'confirmPassword'); }}
+                    aria-invalid={Boolean(fieldErrors.confirmPassword)}
+                    aria-describedby={fieldErrors.confirmPassword ? 'confirm-password-error' : undefined}
+                    required
+                    disabled={loading || !!success}
+                  />
                   <FieldErrors errors={fieldErrors.confirmPassword} id="confirm-password-error" />
                 </div>
               </>

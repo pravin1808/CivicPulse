@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import api from '../../api/api';
 import { extractErrorMessage } from '../../utils/errorHelper';
 import FieldErrors from '../../components/FieldErrors';
+import PasswordInput from '../../components/PasswordInput';
 import { clearFieldError } from '../../utils/formValidation';
 import { ShieldAlert, User, Mail, Phone, MapPin, Lock, AlertCircle, ArrowLeft, Check } from 'lucide-react';
 import './RegisterPage.css';
@@ -214,37 +215,33 @@ const RegisterPage = () => {
             <div className="form-row">
               <div className="input-group">
                 <label htmlFor="password">Password</label>
-                <div className="input-field-wrapper">
-                  <Lock size={18} className="input-icon" />
-                  <input
-                    type="password"
-                    id="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); clearFieldError(setFieldErrors, 'password'); }}
-                    aria-invalid={Boolean(fieldErrors.password)}
-                    aria-describedby={fieldErrors.password ? 'password-error' : undefined}
-                    required
-                  />
-                </div>
+                <PasswordInput
+                  icon={Lock}
+                  id="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); clearFieldError(setFieldErrors, 'password'); }}
+                  aria-invalid={Boolean(fieldErrors.password)}
+                  aria-describedby={fieldErrors.password ? 'password-error' : undefined}
+                  required
+                  disabled={loading}
+                />
                 <FieldErrors errors={fieldErrors.password} id="password-error" />
               </div>
 
               <div className="input-group">
                 <label htmlFor="confirmPassword">Confirm Password</label>
-                <div className="input-field-wrapper">
-                  <Lock size={18} className="input-icon" />
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => { setConfirmPassword(e.target.value); clearFieldError(setFieldErrors, 'confirmPassword'); }}
-                    aria-invalid={Boolean(fieldErrors.confirmPassword)}
-                    aria-describedby={fieldErrors.confirmPassword ? 'confirmPassword-error' : undefined}
-                    required
-                  />
-                </div>
+                <PasswordInput
+                  icon={Lock}
+                  id="confirmPassword"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => { setConfirmPassword(e.target.value); clearFieldError(setFieldErrors, 'confirmPassword'); }}
+                  aria-invalid={Boolean(fieldErrors.confirmPassword)}
+                  aria-describedby={fieldErrors.confirmPassword ? 'confirmPassword-error' : undefined}
+                  required
+                  disabled={loading}
+                />
                 <FieldErrors errors={fieldErrors.confirmPassword} id="confirmPassword-error" />
               </div>
             </div>
