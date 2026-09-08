@@ -36,6 +36,9 @@ public class CitizenService {
     @Autowired
     private CategoryRepo categoryRepo;
 
+    @Autowired
+    private EmailService emailService;
+
     public List<IssueDashboardResponseDto> getAllIssues(Long citizenId) {
         List<Issue> allIssues = issueRepo.findByCitizenId(citizenId);
         List<IssueDashboardResponseDto> issueDashboardResponseDtos = new ArrayList<>();
@@ -114,6 +117,15 @@ public class CitizenService {
         }
 
         Issue updatedIssue = issueRepo.save(issue);
+
+        User citizen = updatedIssue.getCitizen();
+        emailService.sendIssueUpdatedMail(
+                citizen.getEmail(),
+                citizen.getName(),
+                updatedIssue.getIssueId(),
+                updatedIssue.getTitle(),
+                updatedIssue.getStatus().name()
+        );
 
         return new IssueResponseDto(
                 updatedIssue.getIssueId(),

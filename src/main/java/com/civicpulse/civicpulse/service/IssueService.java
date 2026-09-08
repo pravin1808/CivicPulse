@@ -34,11 +34,15 @@ public class IssueService {
     @Autowired
     private UserRepo userRepo;
 
+    @Autowired
+    private EmailService emailService;
+
     @Transactional
     public IssueResponseDto createIssue(@Valid IssueRegisterDto issueRegisterDto, MultipartFile imageFile, Authentication authentication) throws Exception {
-        // Use JwtPrincipal userId to get a JPA reference proxy (no SELECT — just sets the FK)
+        // Fetch the full citizen entity so we can access name and email for the confirmation email
         JwtPrincipal principal = (JwtPrincipal) authentication.getPrincipal();
-        User citizen = userRepo.getReferenceById(principal.userId());
+        User citizen = userRepo.findById(principal.userId())
+                .orElseThrow(() -> new ResourceNotFoundException("Citizen not found with ID: " + principal.userId()));
 
         Category category = categoryRepo.findById(issueRegisterDto.categoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + issueRegisterDto.categoryId()));
@@ -57,6 +61,13 @@ public class IssueService {
         String imageUrl = imageService.saveImage(issueRegisterDto.categoryId(), createdIssue.getIssueId(), imageFile, "Before ");
         createdIssue.setImageUrl(imageUrl);
         Issue updated = issueRepo.save(createdIssue);
+
+        emailService.sendIssueReportedMail(
+                citizen.getEmail(),
+                citizen.getName(),
+                updated.getIssueId(),
+                updated.getTitle()
+        );
 
         return new IssueResponseDto(
                 updated.getIssueId(),

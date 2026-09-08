@@ -18,6 +18,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("api/citizen")
+@CrossOrigin(origins = "http://localhost:5173")
 public class CitizenController {
 
     @Autowired
@@ -26,11 +27,6 @@ public class CitizenController {
     @Autowired
     private CitizenService citizenService;
 
-    @GetMapping("/hello")
-    @CrossOrigin(origins = "http://localhost:5173")
-    public String hello(){
-        return  "Hello World";
-    }
 
     @PostMapping(value = "/issue", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> reportNewIssue(

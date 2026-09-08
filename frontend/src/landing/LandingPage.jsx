@@ -16,7 +16,7 @@ const LandingPage = () => {
         </div>
         <nav className="landing-nav">
           <Link to="/login" className="nav-link">Login</Link>
-          <Link to="/register" className="btn btn-primary btn-nav">Report an Issue</Link>
+          <Link to="/register" className="btn btn-primary btn-nav">Sign Up</Link>
         </nav>
       </header>
 

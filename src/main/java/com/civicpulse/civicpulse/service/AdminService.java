@@ -33,6 +33,9 @@ public class AdminService {
     @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
+    @Autowired
+    private EmailService emailService;
+
     public boolean checkIfUserExist(String email) {
         return userRepo.findUserByEmail(email) != null;
     }
@@ -118,6 +121,15 @@ public class AdminService {
 
         issue.setUpdatedAt(LocalDateTime.now());
         Issue updatedIssue = issueRepo.save(issue);
+
+        // Notify the citizen asynchronously — does not block the API response
+        emailService.sendIssueUpdatedMail(
+                updatedIssue.getCitizen().getEmail(),
+                updatedIssue.getCitizen().getName(),
+                updatedIssue.getIssueId(),
+                updatedIssue.getTitle(),
+                updatedIssue.getStatus().name()
+        );
 
         return new IssueDashboardResponseDto(
                 updatedIssue.getIssueId(),

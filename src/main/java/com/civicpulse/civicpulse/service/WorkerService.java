@@ -28,6 +28,9 @@ public class WorkerService {
     @Autowired
     private IssueRepo issueRepo;
 
+    @Autowired
+    private EmailService emailService;
+
     public List<IssueWorkerResponseDto> getAllIssuesOfWorker(Authentication authentication) {
         // Read worker identity from JwtPrincipal — no DB call needed
         JwtPrincipal principal = (JwtPrincipal) authentication.getPrincipal();
@@ -96,6 +99,14 @@ public class WorkerService {
 
         issue.setStatus(issueUpdateDto.status());
         Issue updatedIssue = issueRepo.save(issue);
+
+        emailService.sendIssueUpdatedMail(
+                updatedIssue.getCitizen().getEmail(),
+                updatedIssue.getCitizen().getName(),
+                updatedIssue.getIssueId(),
+                updatedIssue.getTitle(),
+                updatedIssue.getStatus().name()
+        );
 
         return new IssueWorkerResponseDto(
                 updatedIssue.getIssueId(),
