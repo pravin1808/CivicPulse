@@ -270,6 +270,52 @@ npm run dev
 
 ---
 
+## ☁️ Deploy to Render + Vercel
+
+The repository includes a ready-to-use [Render Blueprint](render.yaml), Docker build, and Vercel SPA rewrite configuration.
+
+### 1. Deploy the API and data services on Render
+
+1. Push this project to GitHub.
+2. In Render, choose **New +** → **Blueprint** and select the repository.
+3. Render reads `render.yaml` and creates:
+   - `civicpulse-api` — Spring Boot API in Singapore
+   - `civicpulse-postgres` — PostgreSQL database
+   - `civicpulse-redis` — Redis-compatible Key Value store for OTPs
+   - a 1 GB persistent disk at `/var/data/images` for uploaded issue photos
+4. When Render prompts for secrets, provide:
+   - `BREVO_API_KEY` — your Brevo API key
+   - `DEFAULT_PASSWORD` — a strong password for the seeded administrator and worker accounts
+5. Wait for the service to become live, then open `https://<your-render-service>.onrender.com/health`. It should return `{"status":"UP"}`.
+
+The image disk requires a paid Render web-service plan. The Blueprint uses Render's smallest paid web-service tier so uploaded photos persist across deploys. PostgreSQL and Redis are configured on their free tiers.
+
+### 2. Deploy the frontend on Vercel
+
+1. Import the same GitHub repository in Vercel.
+2. Set the project's **Root Directory** to `frontend`.
+3. Add the production environment variable below, replacing the placeholder with the Render API's public URL:
+
+   ```text
+   VITE_API_URL=https://<your-render-service>.onrender.com
+   ```
+
+4. Deploy. Vercel will run `npm run build` and publish `dist` automatically.
+
+The frontend's `vercel.json` sends client-side routes to `index.html`, so direct links such as `/citizen/dashboard` continue to work after refresh.
+
+### 3. Lock down CORS after the Vercel URL is known
+
+The initial Render configuration accepts Vercel domains so that production and preview deployments work immediately. Once the final Vercel URL is known, set this Render environment variable to the exact production URL and redeploy the API:
+
+```text
+CORS_ALLOWED_ORIGINS=https://<your-project>.vercel.app
+```
+
+Do not place `BREVO_API_KEY`, `JWT_SECRET`, database credentials, or `DEFAULT_PASSWORD` in the frontend or in Git. Render generates `JWT_SECRET` and wires database/Redis credentials internally.
+
+---
+
 ## 🔒 Security Notes
 
 - All `/api/citizen/**`, `/api/admin/**`, `/api/worker/**` routes require a valid JWT in the `Authorization: Bearer <token>` header.

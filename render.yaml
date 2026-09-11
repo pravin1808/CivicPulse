@@ -1,0 +1,55 @@
+services:
+  - type: web
+    name: civicpulse-api
+    runtime: docker
+    region: singapore
+    plan: 0.5c-512mb
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    disk:
+      name: civicpulse-images
+      mountPath: /var/data/images
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: civicpulse-postgres
+          property: connectionString
+      - key: DB_USERNAME
+        fromDatabase:
+          name: civicpulse-postgres
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: civicpulse-postgres
+          property: password
+      - key: DB_DRIVER
+        value: org.postgresql.Driver
+      - key: REDIS_URL
+        fromService:
+          name: civicpulse-redis
+          type: keyvalue
+          property: connectionString
+      - key: IMAGE_UPLOAD_DIR
+        value: /var/data/images
+      - key: JWT_SECRET
+        generateValue: true
+      - key: BREVO_API_KEY
+        sync: false
+      - key: DEFAULT_PASSWORD
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        value: http://localhost:5173,https://*.vercel.app
+
+  - type: keyvalue
+    name: civicpulse-redis
+    region: singapore
+    plan: free
+    ipAllowList: []
+
+databases:
+  - name: civicpulse-postgres
+    databaseName: civicpulse
+    user: civicpulse
+    region: singapore
+    plan: free

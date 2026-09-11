@@ -1,0 +1,8 @@
+.git
+.idea
+.mvn
+frontend
+target
+README.md
+render.yaml
+**/*.log

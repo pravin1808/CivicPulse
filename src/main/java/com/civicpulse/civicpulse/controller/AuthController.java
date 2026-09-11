@@ -21,7 +21,6 @@ import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/auth/")
-@CrossOrigin(origins = "http://localhost:5173")
 public class AuthController {
 
     @Autowired
