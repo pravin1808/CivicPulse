@@ -39,7 +39,7 @@
 | Layer | Technology |
 |---|---|
 | Framework | Spring Boot 4.1.0 |
-| Language | Java 25 |
+| Language | Java 21 (LTS) |
 | Security | Spring Security + JWT (jjwt 0.13.0) |
 | ORM | Spring Data JPA (Hibernate) |
 | Database | PostgreSQL |
@@ -210,7 +210,7 @@ The frontend reads `error.response.data.message` via `src/utils/errorHelper.js` 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Java 25+
+- Java 21+
 - Maven 3.9+
 - Node.js 18+ & npm
 - PostgreSQL (running instance)
