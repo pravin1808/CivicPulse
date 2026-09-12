@@ -16,7 +16,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/worker")
-@CrossOrigin(origins = "http://localhost:5173")
 public class WorkerController {
 
     @Autowired
