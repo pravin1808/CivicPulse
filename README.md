@@ -243,8 +243,8 @@ spring.mail.password=your_app_password
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 
-# Image upload storage path (must end with /)
-image.upload.path=D:/Images/
+# Image upload storage path (for local development fallback)
+app.images.directory=./uploads/images
 
 # Max file upload size
 spring.servlet.multipart.max-file-size=10MB
