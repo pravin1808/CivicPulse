@@ -14,6 +14,7 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import CitizenDashboard from './pages/citizen/CitizenDashboard';
 import ReportIssue from './pages/citizen/ReportIssue';
 import CitizenIssueDetail from './pages/citizen/IssueDetail';
+import CitizenProfile from './pages/citizen/CitizenProfile';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -61,6 +62,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['citizen']}>
                 <CitizenIssueDetail />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/citizen/profile" 
+            element={
+              <ProtectedRoute allowedRoles={['citizen']}>
+                <CitizenProfile />
               </ProtectedRoute>
             } 
           />

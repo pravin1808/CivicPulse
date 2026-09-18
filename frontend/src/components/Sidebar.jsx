@@ -8,7 +8,6 @@ import {
   Users, 
   LogOut, 
   ShieldAlert, 
-  Settings, 
   UserCircle 
 } from 'lucide-react';
 import './Sidebar.css';
@@ -28,6 +27,7 @@ const Sidebar = () => {
         return [
           { path: '/citizen/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
           { path: '/citizen/report-issue', label: 'Report Issue', icon: <PlusCircle size={20} /> },
+          { path: '/citizen/profile', label: 'My Profile', icon: <UserCircle size={20} /> },
         ];
       case 'admin':
         return [

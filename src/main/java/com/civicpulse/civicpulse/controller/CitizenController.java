@@ -59,4 +59,15 @@ public class CitizenController {
         return new ResponseEntity<>("Issue Deleted Successfully", HttpStatus.OK);
     }
 
+    @GetMapping("/profile")
+    public ResponseEntity<CitizenProfileResponseDto> getProfile(Authentication authentication) {
+        return new ResponseEntity<>(citizenService.getProfile(authentication), HttpStatus.OK);
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<CitizenProfileResponseDto> updateProfile(@Valid @RequestBody CitizenProfileUpdateRequestDto profileDto,
+                                                                   Authentication authentication) {
+        return new ResponseEntity<>(citizenService.updateProfile(authentication, profileDto), HttpStatus.OK);
+    }
+
 }

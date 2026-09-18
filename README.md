@@ -9,6 +9,7 @@
 ### 👤 Citizen
 - Register with OTP-based email verification
 - Login with role-based JWT authentication
+- View and update citizen profile details (name, phone number, address)
 - Report civic issues with photo proof and GPS coordinates
 - Track issue status in real time (Pending → Assigned → In Progress → Resolved / Rejected)
 - Edit or delete issues while they are in `PENDING` status

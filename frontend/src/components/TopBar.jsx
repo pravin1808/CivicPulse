@@ -1,10 +1,23 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { User, Bell } from 'lucide-react';
 import './TopBar.css';
 
 const TopBar = ({ title }) => {
   const { user } = useAuth();
+
+  const profileContent = (
+    <div className={`profile-indicator ${user?.role === 'citizen' ? 'clickable' : ''}`}>
+      <div className="avatar-circle">
+        <User size={18} />
+      </div>
+      <div className="profile-details">
+        <span className="profile-name">{user?.email?.split('@')[0]}</span>
+        <span className="profile-role">{user?.role}</span>
+      </div>
+    </div>
+  );
 
   return (
     <header className="topbar">
@@ -19,15 +32,13 @@ const TopBar = ({ title }) => {
           <span className="badge-dot"></span>
         </button>
         
-        <div className="profile-indicator">
-          <div className="avatar-circle">
-            <User size={18} />
-          </div>
-          <div className="profile-details">
-            <span className="profile-name">{user?.email?.split('@')[0]}</span>
-            <span className="profile-role">{user?.role}</span>
-          </div>
-        </div>
+        {user?.role === 'citizen' ? (
+          <Link to="/citizen/profile" title="View Profile">
+            {profileContent}
+          </Link>
+        ) : (
+          profileContent
+        )}
       </div>
     </header>
   );

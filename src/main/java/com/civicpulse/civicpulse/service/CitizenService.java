@@ -147,4 +147,40 @@ public class CitizenService {
         }
         issueRepo.delete(issue);
     }
+
+    public CitizenProfileResponseDto getProfile(Authentication authentication) {
+        JwtPrincipal principal = (JwtPrincipal) authentication.getPrincipal();
+        User user = userRepo.findById(principal.userId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + principal.userId()));
+
+        return new CitizenProfileResponseDto(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getPhoneNumber(),
+                user.getAddress(),
+                user.getRole()
+        );
+    }
+
+    public CitizenProfileResponseDto updateProfile(Authentication authentication, CitizenProfileUpdateRequestDto dto) {
+        JwtPrincipal principal = (JwtPrincipal) authentication.getPrincipal();
+        User user = userRepo.findById(principal.userId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + principal.userId()));
+
+        user.setName(dto.name());
+        user.setPhoneNumber(dto.phoneNumber());
+        user.setAddress(dto.address());
+
+        User updatedUser = userRepo.save(user);
+
+        return new CitizenProfileResponseDto(
+                updatedUser.getId(),
+                updatedUser.getName(),
+                updatedUser.getEmail(),
+                updatedUser.getPhoneNumber(),
+                updatedUser.getAddress(),
+                updatedUser.getRole()
+        );
+    }
 }

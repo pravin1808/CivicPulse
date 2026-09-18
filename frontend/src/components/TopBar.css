@@ -73,6 +73,20 @@
   gap: 12px;
   padding-left: 20px;
   border-left: 1px solid var(--border-color);
+  transition: opacity var(--transition-fast);
+}
+
+.profile-indicator.clickable {
+  cursor: pointer;
+}
+
+.profile-indicator.clickable:hover {
+  opacity: 0.8;
+}
+
+.profile-indicator.clickable:hover .avatar-circle {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .avatar-circle {
